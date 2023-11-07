@@ -6,7 +6,7 @@ This project aims to comprehensively compare the performance of TornadoVM and Ro
 
 Before you begin, ensure that you have met the following requirements:
 
-1. **Integration of Rodinia OpenMP Code**: Place the 'rodinia' folder under `/tornado-examples/src/main/java/uk/ac/manchester/tornado/examples` to ensure seamless integration of the Rodinia OpenMP benchmark source code into the project for accurate performance comparison.
+1. **Folder Position**: Place the 'rodinia' folder under `/tornado-examples/src/main/java/uk/ac/manchester/tornado/examples` to ensure seamless integration of the Rodinia OpenMP benchmark source code into the project for accurate performance comparison.
 
 2. **TornadoVM**: Follow the installation guide [here](https://tornadovm.readthedocs.io/en/latest/) to set up TornadoVM.
 
