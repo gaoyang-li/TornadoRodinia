@@ -1,10 +1,13 @@
 # TornadoVM vs. Rodinia OpenMP Performance Comparison
 
-This project aims to compare the performance of TornadoVM and Rodinia OpenMP for specific workloads.
+This project aims to comprehensively compare the performance of TornadoVM and Rodinia OpenMP across specific workloads.
 
 ## Prerequisites
 
-- Put the folder 'rodinia' under </tornado-examples/src/main/java/uk/ac/manchester/tornado/examples> to ensure that the Rodinia OpenMP benchmark source code is properly integrated for the performance comparison.
-- TornadoVM (Follow the installation guide [here](https://tornadovm.readthedocs.io/en/latest/))
-- Rodinia OpenMP (Follow the installation guide [here](https://github.com/yuhc/gpu-rodinia/tree/master/openmp))
-  
+Before you begin, ensure that you have met the following requirements:
+
+1. **Integration of Rodinia OpenMP Code**: Place the 'rodinia' folder under `/tornado-examples/src/main/java/uk/ac/manchester/tornado/examples` to ensure seamless integration of the Rodinia OpenMP benchmark source code into the project for accurate performance comparison.
+
+2. **TornadoVM**: Follow the installation guide [here](https://tornadovm.readthedocs.io/en/latest/) to set up TornadoVM.
+
+3. **Rodinia OpenMP**: Follow the installation guide [here](https://github.com/yuhc/gpu-rodinia/tree/master/openmp) to install Rodinia OpenMP.
