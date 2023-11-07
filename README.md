@@ -1,6 +1,6 @@
 # TornadoVM vs. Rodinia OpenMP Performance Comparison
 
-This project aims to compare the performance of TornadoVM and Rodinia OpenMP for specific workloads. The Rodinia OpenMP benchmark code has been integrated into the TornadoVM project for testing.
+This project aims to compare the performance of TornadoVM and Rodinia OpenMP for specific workloads.
 
 ## Prerequisites
 
