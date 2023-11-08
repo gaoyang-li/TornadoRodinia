@@ -5,16 +5,10 @@ import java.util.Scanner;
 
 
 public class bfs {
-    //    Node[] h_graph_nodes;
     static int[] h_graph_nodes_starting;
     static int[] h_graph_nodes_edges;
     static boolean stop = false;
     static int no_of_nodes = 0;
-
-    class Node {
-        int starting;
-        int no_of_edges;
-    }
 
     public static void main(String[] args) {
         if (args.length != 2) {
@@ -109,66 +103,15 @@ public class bfs {
         }
     }
 
-    public static void initUpdateMask(int[] h_graph_nodes_starting, int[] h_graph_nodes_edges, int[] h_graph_mask, int[] h_graph_visited, int[] h_graph_edges, int[] h_cost, int[] h_updating_graph_mask) {
-        int[] stop = new int[1];
-        do {
-            stop[0] = 0; 
-            for (int tid = 0; tid < h_graph_nodes_starting.length; tid++) {
-                if (h_graph_mask[tid] == 1) {
-                    h_graph_mask[tid] = 0;
-                    for (int i = h_graph_nodes_starting[tid]; i < (h_graph_nodes_starting[tid] + h_graph_nodes_edges[tid]); i++) {
-                        int id = h_graph_edges[i];
-                        if (h_graph_visited[id] == 0) {
-                            h_cost[id] = h_cost[tid]+1;
-                            h_updating_graph_mask[id] = 1;
-                        }
-                    }
-                }
-            }
-            for ( int tid = 0; tid < h_updating_graph_mask.length; tid++) {
-                if (h_updating_graph_mask[tid] == 1) {
-                    h_graph_mask[tid] = 1;
-                    h_graph_visited[tid] = 1;
-                    stop[0] = 1;
-                    h_updating_graph_mask[tid] = 0;
-                }
-            }
-        } while (stop[0] == 1);
-    }
-
-    public static void initUpdateMask2(int[] h_graph_nodes_starting, int[] h_graph_nodes_edges, int[] h_graph_mask, int[] h_graph_visited, int[] h_graph_edges, int[] h_cost, int[] h_updating_graph_mask, int[] stop) {
-        for (int tid = 0; tid < h_graph_nodes_starting.length; tid++) {
-            if (h_graph_mask[tid] == 1) {
-                h_graph_mask[tid] = 0;
-                for (int i = h_graph_nodes_starting[tid]; i < (h_graph_nodes_starting[tid] + h_graph_nodes_edges[tid]); i++) {
-                    int id = h_graph_edges[i];
-                    if (h_graph_visited[id] == 0) {
-                        h_cost[id] = h_cost[tid]+1;
-                        h_updating_graph_mask[id] = 1;
-                    }
-                }
-            }
-        }
-        for (int tid = 0; tid < h_updating_graph_mask.length; tid++) {
-            if (h_updating_graph_mask[tid] == 1) {
-                h_graph_mask[tid] = 1;
-                h_graph_visited[tid] = 1;
-                stop[0] = 1; // stop = true
-                h_updating_graph_mask[tid] = 0;
-            }
-        }
-    }
-
     public static void traverseGraph(int num_threads, int no_of_nodes, int[] h_graph_edges, int[] h_graph_mask, int[] h_updating_graph_mask, int[] h_graph_visited, int[] h_cost) {
         System.out.println("Start traversing the tree");
-        long startTime = System.nanoTime();
         int[] stop = new int[1];
+        long startTime = System.nanoTime();
         do {
             stop[0] = 0;
             initMask(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
             updateMask(h_updating_graph_mask, h_graph_mask, h_graph_visited, stop);
         } while (stop[0] == 1);
-
         long endTime = System.nanoTime();
         System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
     }
