@@ -29,11 +29,6 @@ public class BFS {
     static boolean stop = false;
     static int no_of_nodes = 0;
 
-    class Node {
-        int starting;
-        int no_of_edges;
-    }
-
     public static void main(String[] args) {
         if (args.length != 2) {
             usage();
@@ -100,21 +95,6 @@ public class BFS {
         return edges;
     }
 
-    //    public static void initMask(Node[] h_graph_nodes, int[] h_graph_mask, int[] h_graph_visited, int[] h_graph_edges, int[] h_cost, int[] h_updating_graph_mask) { //int no_of_nodes
-    //        for (@Parallel int tid = 0; tid < h_graph_nodes.length; tid++) {
-    //            if (h_graph_mask[tid] == 1) {
-    //                h_graph_mask[tid] = 0;
-    //                for (int i = h_graph_nodes[tid].starting; i < (h_graph_nodes[tid].starting + h_graph_nodes[tid].no_of_edges); i++) {
-    //                    int id = h_graph_edges[i];
-    //                    if (h_graph_visited[id] == 0) {
-    //                        h_cost[id] = h_cost[tid] + 1;
-    //                        h_updating_graph_mask[id] = 1;
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-
     public static void initMask(VectorInt h_graph_nodes_starting, VectorInt h_graph_nodes_edges, VectorInt h_graph_mask, VectorInt h_graph_visited, VectorInt h_graph_edges, VectorInt h_cost, VectorInt h_updating_graph_mask) { //int no_of_nodes
         for (@Parallel int tid = 0; tid < h_graph_nodes_starting.size(); tid++) {
             if (h_graph_mask.get(tid) == 1) {
@@ -141,61 +121,9 @@ public class BFS {
         }
     }
 
-    public static void initUpdateMask(VectorInt h_graph_nodes_starting, VectorInt h_graph_nodes_edges, VectorInt h_graph_mask, VectorInt h_graph_visited, VectorInt h_graph_edges, VectorInt h_cost, VectorInt h_updating_graph_mask) {
-        VectorInt stop = new VectorInt(1);
-        do {
-            stop.set(0, 0); // stop = false;
-            for (@Parallel int tid = 0; tid < h_graph_nodes_starting.size(); tid++) {
-                if (h_graph_mask.get(tid) == 1) {
-                    h_graph_mask.set(tid, 0);
-                    for (int i = h_graph_nodes_starting.get(tid); i < (h_graph_nodes_starting.get(tid) + h_graph_nodes_edges.get(tid)); i++) {
-                        int id = h_graph_edges.get(i);
-                        if (h_graph_visited.get(id) == 0) {
-                            h_cost.set(id, h_cost.get(tid)+1);
-                            h_updating_graph_mask.set(id, 1);
-                        }
-                    }
-                }
-            }
-            for (@Parallel int tid = 0; tid < h_updating_graph_mask.size(); tid++) {
-                if (h_updating_graph_mask.get(tid) == 1) {
-                    h_graph_mask.set(tid, 1);
-                    h_graph_visited.set(tid, 1);
-                    stop.set(0, 1); // stop = true
-                    h_updating_graph_mask.set(tid, 0);
-                }
-            }
-        } while (stop.get(0) == 1);
-    }
-
-    public static void initUpdateMask2(VectorInt h_graph_nodes_starting, VectorInt h_graph_nodes_edges, VectorInt h_graph_mask, VectorInt h_graph_visited, VectorInt h_graph_edges, VectorInt h_cost, VectorInt h_updating_graph_mask, VectorInt stop) {
-        for (int tid = 0; tid < h_graph_nodes_starting.size(); tid++) {
-            if (h_graph_mask.get(tid) == 1) {
-                h_graph_mask.set(tid, 0);
-                for (int i = h_graph_nodes_starting.get(tid); i < (h_graph_nodes_starting.get(tid) + h_graph_nodes_edges.get(tid)); i++) {
-                    int id = h_graph_edges.get(i);
-                    if (h_graph_visited.get(id) == 0) {
-                        h_cost.set(id, h_cost.get(tid)+1);
-                        h_updating_graph_mask.set(id, 1);
-                    }
-                }
-            }
-        }
-        for (int tid = 0; tid < h_updating_graph_mask.size(); tid++) {
-            if (h_updating_graph_mask.get(tid) == 1) {
-                h_graph_mask.set(tid, 1);
-                h_graph_visited.set(tid, 1);
-                stop.set(0, 1); // stop = true
-                h_updating_graph_mask.set(tid, 0);
-            }
-        }
-    }
-
     public static void traverseGraph(int num_threads, int no_of_nodes, VectorInt h_graph_edges, VectorInt h_graph_mask, VectorInt h_updating_graph_mask, VectorInt h_graph_visited, VectorInt h_cost) {
         System.out.println("Start traversing the tree");
-        long startTime = System.nanoTime();
         VectorInt stop = new VectorInt(1);
-//        stop.set(0, 0); // stop = false;
         TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask) //
@@ -213,6 +141,7 @@ public class BFS {
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
         TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
                 .withDevice(device);
+        long startTime = System.nanoTime();
         do {
             stop.set(0, 0);
             executor1.execute();
@@ -220,31 +149,6 @@ public class BFS {
 //             initMask(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
 //             updateMask(h_updating_graph_mask, h_graph_mask, h_graph_visited, stop);
         } while (stop.get(0) == 1);
-
-//        initUpdateMask2(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask, stop);
-//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-//        TaskGraph taskGraph1 = new TaskGraph("s1")
-//                .transferToDevice(DataTransferMode.EVERY_EXECUTION, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask, stop)
-//                .task("t1", BFS::initUpdateMask2, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask, stop)
-//                .transferToHost(DataTransferMode.EVERY_EXECUTION, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask, stop);
-//        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-//        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-//                .withDevice(device);
-//        do{
-//            stop.setset(0, 0);
-//            executor1.execute(); //initUpdateMask2(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask, stop);
-//        }while (stop.get(0) == 1);
-
-//        initUpdateMask(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
-//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-//        TaskGraph taskGraph1 = new TaskGraph("s1")
-//                .transferToDevice(DataTransferMode.EVERY_EXECUTION, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask)
-//                .task("t1", BFS::initUpdateMask, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask)
-//                .transferToHost(DataTransferMode.EVERY_EXECUTION, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
-//        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-//        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-//                .withDevice(device);
-//        executor1.execute();
         long endTime = System.nanoTime();
         System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
     }
