@@ -1,18 +1,50 @@
+package uk.ac.manchester.tornado.examples.rodinia.Pathfinder;
+
 import java.util.Random;
+import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
+import uk.ac.manchester.tornado.api.TaskGraph;
+import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
+import uk.ac.manchester.tornado.api.annotations.Parallel;
+import uk.ac.manchester.tornado.api.annotations.Reduce;
+import uk.ac.manchester.tornado.api.common.TornadoDevice;
+import uk.ac.manchester.tornado.api.enums.DataTransferMode;
+import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
+import uk.ac.manchester.tornado.api.collections.types.Int2;
+import uk.ac.manchester.tornado.api.collections.types.Int3;
+import uk.ac.manchester.tornado.api.collections.types.Int4;
+import uk.ac.manchester.tornado.api.collections.types.Int8;
+import uk.ac.manchester.tornado.api.collections.types.VectorInt;
+import uk.ac.manchester.tornado.api.collections.types.VectorInt2;
+import uk.ac.manchester.tornado.api.collections.types.VectorInt3;
+import uk.ac.manchester.tornado.api.collections.types.VectorInt4;
+import uk.ac.manchester.tornado.api.collections.types.VectorInt8;
+import uk.ac.manchester.tornado.api.collections.math.SimpleMath;
+import uk.ac.manchester.tornado.api.collections.math.TornadoMath;
 
 public class Pathfinder {
     static int rows = 0;
     static int cols = 0;
-    static int[] data;
-    static int[] wall; // int[][] wall;
-    static int[] result;
+    static VectorInt data;
+    static VectorInt wall; // int[][] wall;
+    static VectorInt result;
     static final int seed = 9;
     long cycles;
-    static int[] src;
-    static int[] dst;
-    static int[] temp;
-    static int[] min = new int[1];
+    static VectorInt src;
+    static VectorInt dst;
+    static VectorInt temp;
+    static VectorInt min = new VectorInt(1);
 
+//    public static void initTornado(VectorInt result, VectorInt wall) {
+//        for (@Parallel int j = 0; j < result.size(); j++) {
+//            result.set(j, wall.get(j));
+//        }
+//        for (@Parallel int i = 0; i < wall.size() / result.size(); i++) {
+//            for (@Parallel int j = 0; j < result.size(); j++) {
+//                System.out.print(wall.get(i * result.size() + j) + " ");
+//            }
+//            System.out.println();
+//        }
+//    }
     public static void init(String[] args) {
         if (args.length == 2) {
             cols = Integer.parseInt(args[0]);
@@ -21,71 +53,84 @@ public class Pathfinder {
             System.out.println("Usage: Pathfinder width num_of_steps > out\n");
             System.exit(1);
         }
-        data = new int[rows * cols];
-        wall = new int[rows * cols];
-        result = new int[cols];
+        data = new VectorInt(rows * cols);
+        wall = new VectorInt(rows * cols);
+        result = new VectorInt(cols);
 
         Random rand = new Random(seed);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                wall[i * cols + j] = rand.nextInt(10);
+                wall.set(i * cols + j, rand.nextInt(10));
             }
         }
         //        initTornado(result, wall);
-        for (int j = 0; j < result.length; j++) {
-            result[j] = wall[j];
+        for (int j = 0; j < result.size(); j++) {
+            result.set(j, wall.get(j));
         }
-        for (int i = 0; i < wall.length / result.length; i++) {
-            for (int j = 0; j < result.length; j++) {
-                System.out.print(wall[i * result.length + j] + " ");
+        for (int i = 0; i < wall.size() / result.size(); i++) {
+            for (int j = 0; j < result.size(); j++) {
+                System.out.print(wall.get(i * result.size() + j) + " ");
             }
             System.out.println();
         }
     }
 
-    public static void updateMin(int[] src, int[] dst, int[] vt, int[] min, int[] wall) {
-        for (int n = 0; n < src.length; n++) {
-            min[0] = src[n];
+    public static void updateMin(VectorInt src, VectorInt dst, VectorInt vt, VectorInt min, VectorInt wall) {
+        for (@Parallel int n = 0; n < src.size(); n++) {
+            min.set(0, src.get(n));
             if (n > 0) {
-                min[0] = min[0] < src[n - 1] ? min[0] : src[n - 1];
-                //              min.set(0, TornadoMath.min(min.get(0), src.get(n - 1)));
-                //              min.set(0, Math.min(min.get(0), src.get(n - 1)));
+                min.set(0, min.get(0) < src.get(n-1) ? min.get(0) : src.get(n-1));
+//              min.set(0, TornadoMath.min(min.get(0), src.get(n - 1)));
+//              min.set(0, Math.min(min.get(0), src.get(n - 1)));
             }
-            if (n < src.length - 1) {
-                min[0] = min[0] < src[n + 1] ? min[0] : src[n + 1];
-                //              min.set(0, TornadoMath.min(min.get(0), src.get(n + 1)));
-                //              min.set(0, Math.min(min.get(0), src.get(n + 1)));
+            if (n < src.size() - 1) {
+                min.set(0, min.get(0) < src.get(n+1) ? min.get(0) : src.get(n+1));
+//              min.set(0, TornadoMath.min(min.get(0), src.get(n + 1)));
+//              min.set(0, Math.min(min.get(0), src.get(n + 1)));
             }
-            dst[n] = wall[(vt[0] + 1) * src.length + n] + min[0];
+            dst.set(n, wall.get((vt.get(0) + 1) * src.size() + n) + min.get(0));
         }
     }
 
     public static void run(String[] args) {
         init(args);
         dst = result;
-        src = new int[cols];
+        src = new VectorInt(cols);
         temp = src;
-        int[] vt = new int[1];
+        VectorInt vt = new VectorInt(1);
 
         long startTime = System.nanoTime();
-        for (int t = 0; t < wall.length / src.length - 1; t++) {
-            int[] temp = src;
+        long graphtime = 0;
+        for (int t = 0; t < wall.size() / src.size() - 1; t++) {
+            VectorInt temp = src;
             src = dst;
             dst = temp;
-            vt[0] = t;
-            updateMin(src, dst, vt, min, wall);
+            vt.set(0, t);
+            long graphStartTime = System.nanoTime();
+            TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+            TaskGraph taskGraph2 = new TaskGraph("s2")
+                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, src, vt, min, wall)
+                    .task("t2", Pathfinder::updateMin, src, dst, vt, min, wall)
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, dst, min);
+            ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
+            TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
+                    .withDevice(device);
+            long graphEndTime = System.nanoTime();
+            graphtime = graphtime + (graphEndTime - graphStartTime);
+            executor2.execute();
+            // updateMin(src, dst, vt, min);
         }
         long endTime = System.nanoTime();
         for (int i = 0; i < cols; i++) {
-            data[i] = wall[i];
+            data.set(i, wall.get(i));
         }
-        System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
+        System.out.println("Compute time: " + (double)(endTime - startTime - graphtime) / 1000000000);
         for (int i = 0; i < cols; i++) {
-            System.out.print(data[i] + " ");
+            System.out.print(data.get(i) + " ");
         }
         System.out.println();
         for (int i = 0; i < cols; i++) {
-            System.out.print(dst[i] + " ");
+            System.out.print(dst.get(i) + " ");
         }
     }
 
