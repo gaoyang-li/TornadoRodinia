@@ -1,13 +1,14 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.random.RandomGenerator;
 
 public class Kmeans {
     final static int RANDOM_MAX = Integer.MAX_VALUE;
     final static double FLT_MAX = 3.40282347e+38;
+    static int numAttributes = 0;
+    static int numObjects = 0;
+    static int nclusters = 5;
+    static double threshold = 0.001;
 
     public static int find_nearest_point(double[] pt, /* [nfeatures] */
         int nfeatures,
@@ -43,26 +44,26 @@ public class Kmeans {
     }
 
     /*----< kmeans_clustering() >---------------------------------------------*/
-    public static double[][] kmeans_clustering(double[][] feature, /* in: [npoints][nfeatures] */
+    public static void kmeans_clustering(double[][] feature, /* in: [npoints][nfeatures] */
         int nfeatures,
         int npoints,
         int nclusters,
         double threshold,
-        int[] membership) /* out: [npoints] */ {
+        int[] membership,
+        double[][] tmp_cluster_centres) /* out: [npoints] */ {
 
         int i, j, n = 0, index, loop = 0;
         int[] new_centers_len; /* [nclusters]: no. of points in each cluster */
         double delta;
-        double[][] clusters; /* out: [nclusters][nfeatures] */
         double[][] new_centers; /* [nclusters][nfeatures] */
 
         /* allocate space for returning variable clusters[] */
-        clusters = new double[nclusters][nfeatures];
+        //tmp_cluster_centres = new double[nclusters][nfeatures];
 
         /* randomly pick cluster centers */
         for (i = 0; i < nclusters; i++) {
             for (j = 0; j < nfeatures; j++) {
-                clusters[i][j] = feature[n][j];
+                tmp_cluster_centres[i][j] = feature[n][j];
             }
             n++;
         }
@@ -82,7 +83,7 @@ public class Kmeans {
 
             for (i = 0; i < npoints; i++) {
                 /* find the index of nestest cluster centers */
-                index = find_nearest_point(feature[i], nfeatures, clusters, nclusters);
+                index = find_nearest_point(feature[i], nfeatures, tmp_cluster_centres, nclusters);
                 /* if membership changes, increase delta by 1 */
                 if (membership[i] != index) delta += 1.0;
 
@@ -99,7 +100,7 @@ public class Kmeans {
             for (i = 0; i < nclusters; i++) {
                 for (j = 0; j < nfeatures; j++) {
                     if (new_centers_len[i] > 0)
-                        clusters[i][j] = new_centers[i][j] / new_centers_len[i];
+                        tmp_cluster_centres[i][j] = new_centers[i][j] / new_centers_len[i];
                     new_centers[i][j] = 0.0; /* set back to 0 */
                 }
                 new_centers_len[i] = 0; /* set back to 0 */
@@ -108,7 +109,7 @@ public class Kmeans {
             //delta /= npoints;
         } while (delta > threshold);
 
-        return clusters;
+        //return clusters;
     }
 
     /*---< cluster() >-----------------------------------------------------------*/
@@ -120,20 +121,20 @@ public class Kmeans {
         double[][] cluster_centres /* out: [best_nclusters][numAttributes] */
 
     ) {
-        int nclusters;
         int[] membership;
-        double[][] tmp_cluster_centres;
+        double[][] tmp_cluster_centres = new double[nclusters][numAttributes];
 
         membership = new int[numObjects];
 
         nclusters = num_nclusters;
 
-        tmp_cluster_centres = kmeans_clustering(attributes,
+        kmeans_clustering(attributes,
             numAttributes,
             numObjects,
             nclusters,
             threshold,
-            membership);
+            membership,
+            tmp_cluster_centres);
 
         for (int i = 0; i < tmp_cluster_centres.length; i++) {
             for (int j = 0; j < cluster_centres[0].length; j++) {
@@ -149,11 +150,11 @@ public class Kmeans {
             System.exit(1);
         }
 
-        int numAttributes = 0;
-        int numObjects = 0;
+        numAttributes = 0;
+        numObjects = 0;
         String filename = args[0];
-        int nclusters = Integer.valueOf(args[1]);
-        double threshold = 0.001;
+        nclusters = Integer.valueOf(args[1]);
+        threshold = Double.valueOf(args[2]);
 
         /* from the input file, get the numAttributes and numObjects ------------*/
         try {
