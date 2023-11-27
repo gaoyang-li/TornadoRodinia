@@ -112,7 +112,7 @@ public class Kmeans {
     }
 
     /*---< cluster() >-----------------------------------------------------------*/
-    public static double[][] cluster(int numObjects, /* number of input objects */
+    public static void cluster(int numObjects, /* number of input objects */
         int numAttributes, /* size of attribute of each object */
         double[][] attributes, /* [numObjects][numAttributes] */
         int num_nclusters,
@@ -134,7 +134,12 @@ public class Kmeans {
             nclusters,
             threshold,
             membership);
-        return tmp_cluster_centres;
+
+        for (int i = 0; i < tmp_cluster_centres.length; i++) {
+            for (int j = 0; j < cluster_centres[0].length; j++) {
+                cluster_centres[i][j] = tmp_cluster_centres[i][j];
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -200,8 +205,8 @@ public class Kmeans {
             }
         }
 
-        double[][] cluster_centres = null;
-        cluster_centres = cluster(numObjects,
+        double[][] cluster_centres = new double[numObjects][numAttributes];
+        cluster(numObjects,
             numAttributes,
             attributes, /* [numObjects][numAttributes] */
             nclusters,
