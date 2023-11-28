@@ -10,38 +10,42 @@ public class Kmeans {
     static int nclusters = 5;
     static double threshold = 0.001;
 
-    public static int find_nearest_point(double[] pt, /* [nfeatures] */
+    public static void find_nearest_point(double[] pt, /* [nfeatures] */
         int nfeatures,
         double[][] pts, /* [npts][nfeatures] */
-        int npts
+        int npts,
+        int[] index
     ) {
-        int index = 0;
         double min_dist = FLT_MAX;
         /* find the cluster center id with min distance to pt */
         for (int i = 0; i < npts; i++) {
-            double dist;
-            dist = euclid_dist_2(pt, pts[i], nfeatures); /* no need square root */
+            double dist = 0;
+            for (int j = 0; j < nfeatures; j++) {
+                dist += (pt[j] - pts[i][j]) * (pt[j] - pts[i][j]);
+            }
+
+            // dist = euclid_dist_2(pt, pts[i], nfeatures); /* no need square root */
             if (dist < min_dist) {
                 min_dist = dist;
-                index = i;
+                index[0] = i;
             }
         }
-        return index;
+        //return index;
     }
 
     /*----< euclid_dist_2() >----------------------------------------------------*/
     /* multi-dimensional spatial Euclid distance square */
-    public static double euclid_dist_2(double[] pt1,
-        double[] pt2,
-        int numdims) {
-        double ans = 0;
+    // public static double euclid_dist_2(double[] pt1,
+    //     double[] pt2,
+    //     int numdims) {
+    //     double ans = 0;
 
-        for (int i = 0; i < numdims; i++) {
-            ans += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
-        }
+    //     for (int i = 0; i < numdims; i++) {
+    //         ans += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
+    //     }
 
-        return ans;
-    }
+    //     return ans;
+    // }
 
     /*----< kmeans_clustering() >---------------------------------------------*/
     public static void kmeans_clustering(double[][] feature, /* in: [npoints][nfeatures] */
@@ -52,7 +56,9 @@ public class Kmeans {
         int[] membership,
         double[][] tmp_cluster_centres) /* out: [npoints] */ {
 
-        int i, j, n = 0, index, loop = 0;
+        int i, j, n = 0;
+        int[] index = new int[1];
+        int loop = 0;
         int[] new_centers_len; /* [nclusters]: no. of points in each cluster */
         double delta;
         double[][] new_centers; /* [nclusters][nfeatures] */
@@ -83,17 +89,17 @@ public class Kmeans {
 
             for (i = 0; i < npoints; i++) {
                 /* find the index of nestest cluster centers */
-                index = find_nearest_point(feature[i], nfeatures, tmp_cluster_centres, nclusters);
+                find_nearest_point(feature[i], nfeatures, tmp_cluster_centres, nclusters, index);
                 /* if membership changes, increase delta by 1 */
-                if (membership[i] != index) delta += 1.0;
+                if (membership[i] != index[0]) delta += 1.0;
 
                 /* assign the membership to object i */
-                membership[i] = index;
+                membership[i] = index[0];
 
                 /* update new cluster centers : sum of objects located within */
-                new_centers_len[index]++;
+                new_centers_len[index[0]]++;
                 for (j = 0; j < nfeatures; j++)
-                    new_centers[index][j] += feature[i][j];
+                    new_centers[index[0]][j] += feature[i][j];
             }
 
             /* replace old cluster centers with new_centers */
