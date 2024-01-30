@@ -5,6 +5,7 @@ import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
+import uk.ac.manchester.tornado.api.annotations.Reduce;
 import uk.ac.manchester.tornado.api.collections.types.*;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
@@ -337,40 +338,23 @@ public class ParticleFilter {
      */
 
     public static void setWeights(VectorDouble weights) {
-        for (@Parallel int x = 0; x < weights.size(); x++) {
+        for ( int x = 0; x < weights.size(); x++) {
             weights.set(x, 1 / ((double)(weights.size())));
         }
     }
 
     public static void setArrayXY(VectorDouble arrayX, VectorDouble arrayY, VectorDouble xeye) {
-        for (@Parallel int x = 0; x < arrayX.size(); x++) {
+        for ( int x = 0; x < arrayX.size(); x++) {
             arrayX.set(x, xeye.get(0));
             arrayY.set(x, xeye.get(1));
         }
     }
 
     public static void updateArrayXY(VectorDouble arrayX, VectorDouble arrayY, VectorInt seed) {
-        for (@Parallel int x = 0; x < arrayX.size(); x++) {
+        for ( int x = 0; x < arrayX.size(); x++) {
             arrayX.set(x, arrayX.get(x) + 1 + 5 * randn(seed, x));
-            arrayY.set(x, arrayY.get(x) + -2 + 2 * randn(seed, x));
+            arrayY.set(x, arrayY.get(x) - 2 + 2 * randn(seed, x));
         }
-    }
-
-    public static int myabs(int num) {
-        if (num >= 0) {
-            return num;
-        }
-        return -num;
-    }
-
-    public static int mypow(int num, int p) {
-        if (p == 0) {
-            return 1;
-        }
-        for (int i = 0; i < p; i++) {
-            num = num * num;
-        }
-        return num;
     }
 
     //    public static void computeLikelihood(VectorDouble arrayX, VectorDouble arrayY, VectorDouble objxy, Int2 indxy, VectorInt ind, VectorDouble likelihood, Int4 paras, VectorInt I) {
@@ -392,53 +376,53 @@ public class ParticleFilter {
     //    }
 
     public static void computeLikelihood(VectorDouble arrayX, VectorDouble arrayY, VectorDouble objxy, VectorInt indxy, VectorInt ind, VectorDouble likelihood, Int4 paras, VectorInt I) {
-        for (int x = 0; x < arrayX.size(); x++) {
-            for (int y = 0; y < (objxy.size() / 2); y++) {
+        for ( int x = 0; x < arrayX.size(); x++) {
+            for ( int y = 0; y < (objxy.size() / 2); y++) {
                 indxy.set(0, (int)(roundDouble(arrayX.get(x)) + objxy.get(y * 2 + 1)));
                 indxy.set(1, (int)(roundDouble(arrayY.get(x)) + objxy.get(y * 2)));
-                int absResult = (indxy.get(0) * paras.getY() * paras.getZ() + paras.getY() * paras.getZ() + paras.getW());
+                int absResult = (indxy.get(0) * paras.getY() * paras.getZ() + indxy.get(1) * paras.getZ() + paras.getW());
                 ind.set(x * (objxy.size() / 2) + y, (absResult >= 0) ? absResult : -absResult);
                 if (ind.get(x * (objxy.size() / 2) + y) >= paras.getX() * paras.getY() * paras.getZ()) {
                     ind.set(x * (objxy.size() / 2) + y, 0);
                 }
             }
             likelihood.set(x, 0);
-            for (int y = 0; y < objxy.size() / 2; y++) {
-                int powResult1 = (I.get(ind.get(x * objxy.size() / 2 + y)) - 100);
-                int powResult2 = (I.get(ind.get(x * (objxy.size() / 2) + y)) - 228);
-                likelihood.set(x, likelihood.get(x) + ((powResult1 * powResult1) - (powResult2 * powResult2)) / 50.0);
+            for ( int y = 0; y < (objxy.size() / 2); y++) {
+                int powResult1 = I.get(ind.get(x * (objxy.size() / 2) + y)) - 100;
+                int powResult2 = I.get(ind.get(x * (objxy.size() / 2) + y)) - 228;
+                likelihood.set(x, likelihood.get(x) + ((powResult1 * powResult1 - powResult2 * powResult2) / 50.0));
             }
-            likelihood.set(x, likelihood.get(x) / ((double) objxy.size() / 2));
+            likelihood.set(x, likelihood.get(x) / ((double) (objxy.size() / 2)));
         }
     }
 
     public static void updateWeights(VectorDouble weights, VectorDouble likelihood) {
-        for (@Parallel int x = 0; x < weights.size(); x++) {
+        for ( int x = 0; x < weights.size(); x++) {
             weights.set(x, weights.get(x) * exp(likelihood.get(x)));
         }
     }
 
-    public static void computeSumWeights(VectorDouble weights, VectorDouble sumWeights) {
-        for (@Parallel int x = 0; x < weights.size(); x++) {
+    public static void computeSumWeights( VectorDouble weights, VectorDouble sumWeights) {
+        for (int x = 0; x < weights.size(); x++) {
             sumWeights.set(0, sumWeights.get(0) + weights.get(x)); //sumWeights = sumWeights + weights.get(x);
         }
     }
 
-    public static void normaliseWeights(VectorDouble weights, VectorDouble sumWeights) {
-        for (@Parallel int x = 0; x < weights.size(); x++) {
+    public static void normaliseWeights( VectorDouble weights, VectorDouble sumWeights) {
+        for ( int x = 0; x < weights.size(); x++) {
             weights.set(x, weights.get(x) / sumWeights.get(0));
         }
     }
 
     public static void moveObject(VectorDouble arrayX, VectorDouble arrayY, VectorDouble weights, VectorDouble xeye) {
-        for (int x = 0; x < weights.size(); x++) {
+        for ( int x = 0; x < weights.size(); x++) {
             xeye.set(0, xeye.get(0) + arrayX.get(x) * weights.get(x)); // xe += arrayX.get(x) * weights.get(x);
             xeye.set(1, xeye.get(1) + arrayY.get(x) * weights.get(x)); // ye += arrayY.get(x) * weights.get(x);
         }
     }
 
     public static void findU(VectorDouble u, VectorDouble u1) {
-        for (@Parallel int x = 0; x < u.size(); x++) {
+        for ( int x = 0; x < u.size(); x++) {
             u.set(x, u1.get(0) + x / ((double)(u.size())));
         }
     }
@@ -470,9 +454,11 @@ public class ParticleFilter {
         taskTotalTime = 0;
         long start = get_time();
 
+        // original partice centroid
         VectorDouble xeye = new VectorDouble(2);
         xeye.set(0, roundDouble(IszY / 2.0));
         xeye.set(1, roundDouble(IszX / 2.0));
+
         VectorInt indxy = new VectorInt(2);
         indxy.set(0, 0);
         indxy.set(1, 0);
@@ -480,9 +466,6 @@ public class ParticleFilter {
         paras.setX(IszX);
         paras.setY(IszY);
         paras.setZ(Nfr);
-        //original particle centroid
-        //        double xe = roundDouble(IszY/2.0);
-        //        double ye = roundDouble(IszX/2.0);
 
         //expected object locations, compared to center
         int radius = 5;
@@ -493,8 +476,9 @@ public class ParticleFilter {
         int x, y;
         for (x = 0; x < diameter; x++) {
             for (y = 0; y < diameter; y++) {
-                if (disk.get(x * diameter + y) == 1)
+                if (disk.get(x * diameter + y) == 1){
                     countOnes++;
+                }
             }
         }
         VectorDouble objxy = new VectorDouble(countOnes * 2);
@@ -529,17 +513,18 @@ public class ParticleFilter {
         VectorInt ind = new VectorInt(countOnes * Nparticles);
         taskStartTime = get_time();
         TaskGraph taskGraph2 = new TaskGraph("s2")
-                .transferToDevice(DataTransferMode.EVERY_EXECUTION, xeye) //
-                .task("t2", ParticleFilter::setArrayXY, arrayX, arrayY, xeye) // no_of_nodes,
-                .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, xeye)
+                .task("t2", ParticleFilter::setArrayXY, arrayX, arrayY, xeye)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, xeye);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
         TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
                 .withDevice(device);
         taskEndTime = get_time();
         executor2.execute();
+
         taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
         System.out.printf("TIME TO SET ARRAYS TOOK: %f\n", elapsed_time(get_weights, get_time() - (taskEndTime - taskStartTime)));
-        int indX, indY;
+        // int indX, indY;
         for (int k = 1; k < Nfr; k++) {
             paras.setW(k);
             long set_arrays = get_time();
@@ -550,12 +535,13 @@ public class ParticleFilter {
             TaskGraph taskGraph3 = new TaskGraph("s3")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, seed)
                     .task("t3", ParticleFilter::updateArrayXY, arrayX, arrayY, seed)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, seed);
             ImmutableTaskGraph immutableTaskGraph3 = taskGraph3.snapshot();
             TornadoExecutionPlan executor3 = new TornadoExecutionPlan(immutableTaskGraph3)
                     .withDevice(device);
             taskEndTime = get_time();
             executor3.execute();
+
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
             long error = get_time();
             System.out.printf("TIME TO SET ERROR TOOK: %f\n", elapsed_time(set_arrays, error - (taskEndTime - taskStartTime)));
@@ -582,8 +568,8 @@ public class ParticleFilter {
             TaskGraph taskGraph4 = new TaskGraph("s4")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, likelihood)
                     .task("t4", ParticleFilter::updateWeights, weights, likelihood)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
-            ImmutableTaskGraph immutableTaskGraph4 = taskGraph3.snapshot();
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights, likelihood);
+            ImmutableTaskGraph immutableTaskGraph4 = taskGraph4.snapshot();
             TornadoExecutionPlan executor4 = new TornadoExecutionPlan(immutableTaskGraph4)
                     .withDevice(device);
             taskEndTime = get_time();
@@ -593,11 +579,12 @@ public class ParticleFilter {
             System.out.printf("TIME TO GET EXP TOOK: %f\n", elapsed_time(likelihood_time, exponential - (taskEndTime - taskStartTime)));
 
             VectorDouble sumWeights = new VectorDouble(1); // double sumWeights = 0;
+            sumWeights.set(0, 0);
             taskStartTime = get_time();
             TaskGraph taskGraph5 = new TaskGraph("s5")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, sumWeights)
                     .task("t5", ParticleFilter::computeSumWeights, weights, sumWeights)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, sumWeights);
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights, sumWeights);
             ImmutableTaskGraph immutableTaskGraph5 = taskGraph5.snapshot();
             TornadoExecutionPlan executor5 = new TornadoExecutionPlan(immutableTaskGraph5)
                     .withDevice(device);
@@ -611,7 +598,7 @@ public class ParticleFilter {
             TaskGraph taskGraph6 = new TaskGraph("s6")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, sumWeights)
                     .task("t6", ParticleFilter::normaliseWeights, weights, sumWeights)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights, sumWeights);
             ImmutableTaskGraph immutableTaskGraph6 = taskGraph6.snapshot();
             TornadoExecutionPlan executor6 = new TornadoExecutionPlan(immutableTaskGraph6)
                     .withDevice(device);
@@ -624,12 +611,11 @@ public class ParticleFilter {
             xeye.set(0, 0); // xe = 0;
             xeye.set(1, 0); // ye = 0;
 
-            //            moveObject(arrayX, arrayY, weights, xeye);
             taskStartTime = get_time();
             TaskGraph taskGraph10 = new TaskGraph("s10")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xeye)
                     .task("t10", ParticleFilter::moveObject, arrayX, arrayY, weights, xeye)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, xeye);
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xeye);
             ImmutableTaskGraph immutableTaskGraph10 = taskGraph10.snapshot();
             TornadoExecutionPlan executor10 = new TornadoExecutionPlan(immutableTaskGraph10)
                     .withDevice(device);
@@ -638,8 +624,8 @@ public class ParticleFilter {
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
             long move_time = get_time();
             System.out.printf("TIME TO MOVE OBJECT TOOK: %f\n", elapsed_time(normalize, move_time - (taskEndTime - taskStartTime)));
-            System.out.printf("XE: %f\n", xeye.get(0)); // System.out.printf("XE: %f\n", xe);
-            System.out.printf("YE: %f\n", xeye.get(1)); // System.out.printf("YE: %f\n", ye);
+            System.out.printf("XE: %f\n", xeye.get(0));
+            System.out.printf("YE: %f\n", xeye.get(1));
             double distance = sqrt(pow((double)(xeye.get(0) - (int) roundDouble(IszY / 2.0)), 2) + pow((double)(xeye.get(1) - (int) roundDouble(IszX / 2.0)), 2));
             System.out.printf("%f\n", distance);
 
@@ -655,7 +641,7 @@ public class ParticleFilter {
             taskStartTime = get_time();
             TaskGraph taskGraph7 = new TaskGraph("s7")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, u, u1)
-                    .task("t7", ParticleFilter::normaliseWeights, u, u1)
+                    .task("t7", ParticleFilter::findU, u, u1)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, u);
             ImmutableTaskGraph immutableTaskGraph7 = taskGraph7.snapshot();
             TornadoExecutionPlan executor7 = new TornadoExecutionPlan(immutableTaskGraph7)

@@ -141,15 +141,19 @@ public class BFS {
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
         TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
                 .withDevice(device);
+
         long startTime = System.nanoTime();
+        int loops = 0;
         do {
             stop.set(0, 0);
             executor1.execute();
             executor2.execute();
+            loops++;
 //             initMask(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
 //             updateMask(h_updating_graph_mask, h_graph_mask, h_graph_visited, stop);
         } while (stop.get(0) == 1);
         long endTime = System.nanoTime();
+//        System.out.println("loops: " + loops);
         System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
     }
 

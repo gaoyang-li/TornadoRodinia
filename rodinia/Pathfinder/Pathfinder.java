@@ -109,9 +109,9 @@ public class Pathfinder {
             long graphStartTime = System.nanoTime();
             TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
             TaskGraph taskGraph2 = new TaskGraph("s2")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, src, vt, min, wall)
+                    .transferToDevice(DataTransferMode.FIRST_EXECUTION, src, vt, min, wall)
                     .task("t2", Pathfinder::updateMin, src, dst, vt, min, wall)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, dst, min);
+                    .transferToHost(DataTransferMode.FIRST_EXECUTION, dst, min);
             ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
             TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
                     .withDevice(device);
