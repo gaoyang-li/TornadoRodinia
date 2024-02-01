@@ -9,7 +9,9 @@ import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
-import uk.ac.manchester.tornado.api.collections.types.*;
+import uk.ac.manchester.tornado.api.collections.types.Double4;
+import uk.ac.manchester.tornado.api.collections.types.VectorDouble;
+import uk.ac.manchester.tornado.api.collections.types.VectorInt;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
@@ -20,10 +22,13 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-import uk.ac.manchester.tornado.examples.rodinia.bfs.BFS;
 
 
 public class Hotspot {
+
+    static VectorDouble temp;
+    static VectorDouble power;
+    static VectorDouble result;
 
     public static double get_time() {
         return (double)(System.nanoTime()) / 1000000000;
@@ -56,17 +61,22 @@ public class Hotspot {
      * advances the solution of the discretized difference equations
      * by one time step
      */
-    public static void single_iteration(VectorDouble result, VectorDouble temp, VectorDouble power, VectorInt paras, Double4 args) {
-        double delta = 0.0;
+
+
+    //public static void single_iteration(VectorDouble result, VectorDouble temp, VectorDouble power, VectorInt paras, Double4 args) {
+    public static void single_iteration(VectorInt paras, VectorDouble args) {
+        double[] delta = new double[1];//double delta = 0.0;
+        delta[0] = 0.0;
         //int r, c;
         //int chunk;
-        //int num_chunk = paras.getX() * paras.getY() / (BLOCK_SIZE_R * BLOCK_SIZE_C);
-        //int chunks_in_row = paras.getY() / BLOCK_SIZE_C;
-        //int chunks_in_col = paras.getX() / BLOCK_SIZE_R;
+        //int num_chunk = paras.get(1) * paras.get(2) / (BLOCK_SIZE_R * BLOCK_SIZE_C);
+        //int chunks_in_row = paras.get(2) / BLOCK_SIZE_C;
+        //int chunks_in_col = paras.get(1) / BLOCK_SIZE_R;
 
-        for (@Parallel int chunk = 0; chunk < paras.get(0) * paras.get(1) / (16 * 16); ++chunk) {
+        for (int chunk = 0; chunk < paras.get(0) * paras.get(1) / (16 * 16); ++chunk) {
             //int r_start = 16 * (chunk / (paras.get(0) / 16));
             //int c_start = 16 * (chunk % (paras.get(1) / 16));
+
             int r_end = 16 * (chunk / (paras.get(0) / 16)) + 16 > paras.get(0) ? paras.get(0) : 16 * (chunk / (paras.get(0) / 16)) + 16;
             int c_end = 16 * (chunk % (paras.get(1) / 16)) + 16 > paras.get(1) ? paras.get(1) : 16 * (chunk % (paras.get(1) / 16)) + 16;
 
@@ -75,45 +85,45 @@ public class Hotspot {
                     for (int c = 16 * (chunk % (paras.get(1) / 16)); c < 16 * (chunk % (paras.get(1) / 16)) + 16; ++c) {
                         /* Corner 1 */
                         if ((r == 0) && (c == 0)) {
-                            delta = (args.getW()) * (power.get(0) + (temp.get(1) - temp.get(0)) * args.getX() + (temp.get(paras.get(1)) - temp.get(0)) * args.getY() + (amb_temp - temp.get(0)) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(0) + (temp.get(1) - temp.get(0)) * args.get(1) + (temp.get(paras.get(1)) - temp.get(0)) * args.get(2) + (80.0 - temp.get(0)) * args.get(3));
                         }
                         /* Corner 2 */
                         else if ((r == 0) && (c == paras.get(1) - 1)) {
-                            delta = (args.getW()) * (power.get(c) + (temp.get(c - 1) - temp.get(c)) * args.getX() + (temp.get(c + paras.get(1)) - temp.get(c)) * args.getY() + (amb_temp - temp.get(c)) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(c) + (temp.get(c - 1) - temp.get(c)) * args.get(1) + (temp.get(c + paras.get(1)) - temp.get(c)) * args.get(2) + (80.0 - temp.get(c)) * args.get(3));
                         }
                         /* Corner 3 */
                         else if ((r == paras.get(0) - 1) && (c == paras.get(1) - 1)) {
-                            delta = (args.getW()) * (power.get(r * paras.get(1) + c) + (temp.get(r * paras.get(1) + c - 1) - temp.get(r * paras.get(1) + c)) * args.getX() + (temp.get((r - 1) * paras.get(1) + c) - temp.get(r * paras.get(1) + c)) * args.getY() + (amb_temp - temp.get(r * paras.get(1) + c)) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1) + c) + (temp.get(r * paras.get(1) + c - 1) - temp.get(r * paras.get(1) + c)) * args.get(1) + (temp.get((r - 1) * paras.get(1) + c) - temp.get(r * paras.get(1) + c)) * args.get(2) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3));
                         }
                         /* Corner 4	*/
                         else if ((r == paras.get(0) - 1) && (c == 0)) {
-                            delta = (args.getW()) * (power.get(r * paras.get(1)) + (temp.get(r * paras.get(1) + 1) - temp.get(r * paras.get(1))) * args.getX() + (temp.get((r - 1) * paras.get(1)) - temp.get(r * paras.get(1))) * args.getY() + (amb_temp - temp.get(r * paras.get(1))) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1)) + (temp.get(r * paras.get(1) + 1) - temp.get(r * paras.get(1))) * args.get(1) + (temp.get((r - 1) * paras.get(1)) - temp.get(r * paras.get(1))) * args.get(2) + (80.0 - temp.get(r * paras.get(1))) * args.get(3));
                         }
                         /* Edge 1 */
                         else if (r == 0) {
-                            delta = (args.getW()) * (power.get(c) + (temp.get(c + 1) + temp.get(c - 1) - 2.0 * temp.get(c)) * args.getX() + (temp.get(paras.get(1) + c) - temp.get(c)) * args.getY() + (amb_temp - temp.get(c)) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(c) + (temp.get(c + 1) + temp.get(c - 1) - 2.0 * temp.get(c)) * args.get(1) + (temp.get(paras.get(1) + c) - temp.get(c)) * args.get(2) + (80.0 - temp.get(c)) * args.get(3));
                         }
                         /* Edge 2 */
                         else if (c == paras.get(1) - 1) {
-                            delta = (args.getW()) * (power.get(r * paras.get(1) + c) + (temp.get((r + 1) * paras.get(1) + c) + temp.get((r - 1) * paras.get(1) + c) - 2.0 * temp.get(r * paras.get(1) + c)) * args.getY() + (temp.get(r * paras.get(1) + c - 1) - temp.get(r * paras.get(1) + c)) * args.getX() + (amb_temp - temp.get(r * paras.get(1) + c)) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1) + c) + (temp.get((r + 1) * paras.get(1) + c) + temp.get((r - 1) * paras.get(1) + c) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(2) + (temp.get(r * paras.get(1) + c - 1) - temp.get(r * paras.get(1) + c)) * args.get(1) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3));
                         }
                         /* Edge 3 */
                         else if (r == paras.get(0) - 1) {
-                            delta = (args.getW()) * (power.get(r * paras.get(1) + c) + (temp.get(r * paras.get(1) + c + 1) + temp.get(r * paras.get(1) + c - 1) - 2.0 * temp.get(r * paras.get(1) + c)) * args.getX() + (temp.get((r - 1) * paras.get(1) + c) - temp.get(r * paras.get(1) + c)) * args.getY() + (amb_temp - temp.get(r * paras.get(1) + c)) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1) + c) + (temp.get(r * paras.get(1) + c + 1) + temp.get(r * paras.get(1) + c - 1) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(1) + (temp.get((r - 1) * paras.get(1) + c) - temp.get(r * paras.get(1) + c)) * args.get(2) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3));
                         }
                         /* Edge 4 */
                         else if (c == 0) {
-                            delta = (args.getW()) * (power.get(r * paras.get(1)) + (temp.get((r + 1) * paras.get(1)) + temp.get((r - 1) * paras.get(1)) - 2.0 * temp.get(r * paras.get(1))) * args.getY() + (temp.get(r * paras.get(1) + 1) - temp.get(r * paras.get(1))) * args.getX() + (amb_temp - temp.get(r * paras.get(1))) * args.getZ());
+                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1)) + (temp.get((r + 1) * paras.get(1)) + temp.get((r - 1) * paras.get(1)) - 2.0 * temp.get(r * paras.get(1))) * args.get(2) + (temp.get(r * paras.get(1) + 1) - temp.get(r * paras.get(1))) * args.get(1) + (80.0 - temp.get(r * paras.get(1))) * args.get(3));
                         }
-                        result.set(r * paras.get(1) + c, temp.get(r * paras.get(1) + c) + delta);
+                        result.set(r * paras.get(1) + c, temp.get(r * paras.get(1) + c) + delta[0]);
                     }
                 }
-                continue;
+                //continue;
             }
 
             for (int r = 16 * (chunk / (paras.get(0) / 16)); r < 16 * (chunk / (paras.get(0) / 16)) + 16; ++r) {
                 for (int c = 16 * (chunk % (paras.get(1) / 16)); c < 16 * (chunk % (paras.get(1) / 16)) + 16; ++c) {
-                    result.set(r * paras.get(1) + c, temp.get(r * paras.get(1) + c) + (args.getW() * (power.get(r * paras.get(1) + c) + (temp.get((r + 1) * paras.get(1) + c) + temp.get((r - 1) * paras.get(1) + c) - 2.0 * temp.get(r * paras.get(1) + c)) * args.getY() + (temp.get(r * paras.get(1) + c + 1) + temp.get(r * paras.get(1) + c - 1) - 2.0 * temp.get(r * paras.get(1) + c)) * args.getX() + (amb_temp - temp.get(r * paras.get(1) + c)) * args.getZ())));
+                    result.set(r * paras.get(1) + c, temp.get(r * paras.get(1) + c) + (args.get(0) * (power.get(r * paras.get(1) + c) + (temp.get((r + 1) * paras.get(1) + c) + temp.get((r - 1) * paras.get(1) + c) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(2) + (temp.get(r * paras.get(1) + c + 1) + temp.get(r * paras.get(1) + c - 1) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(1) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3))));
                 }
             }
         }
@@ -143,35 +153,42 @@ public class Hotspot {
         double Rz_1 = 1.0 / Rz;
         double Cap_1 = step / Cap;
 
-        Double4 args = new Double4();
-        args.setW(Cap_1);
-        args.setX(Rx_1);
-        args.setY(Ry_1);
-        args.setZ(Rz_1);
+        VectorDouble args = new VectorDouble(4);
+        args.set(0, Cap_1);//args.setW(Cap_1);
+        args.set(1, Rx_1);;//args.setX(Rx_1);
+        args.set(2, Ry_1);//args.setY(Ry_1);
+        args.set(3, Rz_1);//args.setZ(Rz_1);
 
         System.out.printf("total iterations: %d s\tstep size: %g s\n", paras.get(2), step);
         System.out.printf("Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
 
-        //int array_size = paras.getX() * paras.getY();
+        //int array_size = paras.get(1) * paras.get(2);
 
         //{
-            VectorDouble r = result;
-            VectorDouble t = temp;
+            //VectorDouble r = result;
+            //VectorDouble t = temp;
             TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+            TaskGraph taskGraph1 = new TaskGraph("s1")
+                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, paras, args)
+                    .task("t1", Hotspot::single_iteration, paras, args)
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, paras, args);
+            ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
+            TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                    .withDevice(device);
             for ( i = 0; i < paras.get(2); i++) {
                 System.out.printf("iteration %d\n", i++);
-                // single_iteration(r, t, power, paras, args);
-                TaskGraph taskGraph1 = new TaskGraph("s1")
-                        .transferToDevice(DataTransferMode.EVERY_EXECUTION, t, power, paras, args)
-                        .task("t1", Hotspot::single_iteration, r, t, power, paras, args)
-                        .transferToHost(DataTransferMode.EVERY_EXECUTION, r);
-                ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-                TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                        .withDevice(device);
+                //single_iteration(paras, args);
+//                TaskGraph taskGraph1 = new TaskGraph("s1")
+//                        .transferToDevice(DataTransferMode.EVERY_EXECUTION, t, power, paras, args)
+//                        .task("t1", Hotspot::single_iteration, r, t, power, paras, args)
+//                        .transferToHost(DataTransferMode.EVERY_EXECUTION, r);
+//                ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
+//                TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+//                        .withDevice(device);
                 executor1.execute();
-                VectorDouble tmp = t;
-                t = r;
-                r = tmp;
+                VectorDouble tmp = temp;
+                temp = result;
+                result = tmp;
             }
             //System.out.println("compute r" + Arrays.toString(r));
             //System.out.println("compute t" + Arrays.toString(t));
@@ -218,9 +235,9 @@ public class Hotspot {
     public static void main(String[] args){
         int grid_rows, grid_cols, sim_time, i;
         String tfile, pfile, ofile;
-        VectorDouble temp;
-        VectorDouble power;
-        VectorDouble result;
+//        VectorDouble temp;
+//        VectorDouble power;
+//        VectorDouble result;
         grid_rows = Integer.parseInt(args[0]);
         grid_cols = Integer.parseInt(args[1]);
         sim_time =  Integer.parseInt(args[2]);
