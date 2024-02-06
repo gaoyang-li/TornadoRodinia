@@ -1,0 +1,1 @@
+tornado -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.hotspot.Hotspot 64 64 4 temp_64 power_64 out
