@@ -1,16 +1,17 @@
 package uk.ac.manchester.tornado.examples.rodinia.kmeans;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
 import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
-import uk.ac.manchester.tornado.api.annotations.Parallel;
-import uk.ac.manchester.tornado.api.collections.types.*;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
+import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
+
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
 
 public class Kmeans {
     final static int RANDOM_MAX = Integer.MAX_VALUE;
@@ -20,75 +21,74 @@ public class Kmeans {
     static int nclusters = 5;
     static double threshold = 0.001;
 
-    static Int3 paras; // num_clusters, numObjects, numAttributes
-
     public static void find_nearest_point(double[] pt, /* [nfeatures] */
+                                          int nfeatures,
                                           double[][] pts, /* [npts][nfeatures] */
-                                          VectorInt index
+                                          int npts,
+                                          int[] index
     ) {
         double min_dist = FLT_MAX;
         /* find the cluster center id with min distance to pt */
-        for (int i = 0; i < pts.length; i++) {
+        for (int i = 0; i < npts; i++) {
             double dist = 0;
-            for (int j = 0; j < pts[0].length; j++) {
+            for (int j = 0; j < nfeatures; j++) {
                 dist += (pt[j] - pts[i][j]) * (pt[j] - pts[i][j]);
             }
 
             // dist = euclid_dist_2(pt, pts[i], nfeatures); /* no need square root */
             if (dist < min_dist) {
                 min_dist = dist;
-                index.set(0, i);
+                index[0] = i;
             }
         }
-        //return index;
     }
 
-    public static void updateCentres(double[][] feature, /* in: [npoints][nfeatures] */
-                                     Int3 paras,
-                                     int[] membership,
-                                     double[][] tmp_cluster_centres,
-                                     VectorInt index,
-                                     VectorDouble delta,
-                                     double[][] new_centers,
-                                     int[] new_centers_len) {
-        for (@Parallel int i = 0; i < paras.getY(); i++) {
+    public static void parallel(double[][] feature, int nfeatures, double[][] tmp_cluster_centres, int nclusters, int[] index, int[] membership, int[] new_centers_len, double[][] new_centers, VectorDouble delta){
+        for (int i = 0; i < feature.length; i++) {
             /* find the index of nestest cluster centers */
-            double min_dist = FLT_MAX;
-            /* find the cluster center id with min distance to pt */
-            find_nearest_point(feature[i], tmp_cluster_centres, index);
+            find_nearest_point(feature[i], nfeatures, tmp_cluster_centres, nclusters, index);
             /* if membership changes, increase delta by 1 */
-            if (membership[i] != index.get(0)) {
-                delta.set(0, delta.get(0) + 1.0);
+            if (membership[i] != index[0]) {
+                delta.set(0, delta.get(0) + 1.0);//delta += 1.0;
             }
-            /* assign the membership to object i */
-            membership[i] = index.get(0);
-            /* update new cluster centers : sum of objects located within */
-            new_centers_len[index.get(0)]++;
-            for (int j = 0; j < paras.getZ(); j++) {
-                new_centers[index.get(0)][j] += feature[i][j];
-            }
-        }
 
-        /* replace old cluster centers with new_centers */
-        for (int i = 0; i < paras.getX(); i++) {
-            for (int j = 0; j < paras.getZ(); j++) {
-                if (new_centers_len[i] > 0)
-                    tmp_cluster_centres[i][j] = new_centers[i][j] / new_centers_len[i];
-                new_centers[i][j] = 0.0; /* set back to 0 */
+            /* assign the membership to object i */
+            membership[i] = index[0];
+
+            /* update new cluster centers : sum of objects located within */
+            new_centers_len[index[0]]++;
+            for (int j = 0; j < nfeatures; j++){
+                new_centers[index[0]][j] = new_centers[index[0]][j] + feature[i][j];
             }
-            new_centers_len[i] = 0; /* set back to 0 */
         }
     }
+
+    /*----< euclid_dist_2() >----------------------------------------------------*/
+    /* multi-dimensional spatial Euclid distance square */
+    // public static double euclid_dist_2(double[] pt1,
+    //     double[] pt2,
+    //     int numdims) {
+    //     double ans = 0;
+
+    //     for (int i = 0; i < numdims; i++) {
+    //         ans += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
+    //     }
+
+    //     return ans;
+    // }
 
     /*----< kmeans_clustering() >---------------------------------------------*/
     public static void kmeans_clustering(double[][] feature, /* in: [npoints][nfeatures] */
-                                         Int3 paras,
-                                         VectorDouble threshold,
+                                         int nfeatures,
+                                         int npoints,
+                                         int nclusters,
+                                         double threshold,
                                          int[] membership,
                                          double[][] tmp_cluster_centres) /* out: [npoints] */ {
 
-        int n = 0;
-        VectorInt index = new VectorInt(1);
+        int i, j, n = 0;
+        int[] index = new int[1];
+        int loop = 0;
         int[] new_centers_len; /* [nclusters]: no. of points in each cluster */
         VectorDouble delta = new VectorDouble(1);
         double[][] new_centers; /* [nclusters][nfeatures] */
@@ -97,63 +97,49 @@ public class Kmeans {
         //tmp_cluster_centres = new double[nclusters][nfeatures];
 
         /* randomly pick cluster centers */
-        for (int i = 0; i < nclusters; i++) {
-            for (int j = 0; j < paras.getZ(); j++) {
+        for (i = 0; i < nclusters; i++) {
+            for (j = 0; j < nfeatures; j++) {
                 tmp_cluster_centres[i][j] = feature[n][j];
             }
             n++;
         }
 
-        for (int i = 0; i < paras.getY(); i++) {
+        for (i = 0; i < npoints; i++) {
             membership[i] = -1;
         }
 
         /* need to initialize new_centers_len and new_centers[0] to all 0 */
         new_centers_len = new int[nclusters];
 
-        new_centers = new double[nclusters][paras.getZ()];
+        new_centers = new double[nclusters][nfeatures];
 
         TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-        TaskGraph taskGraph1 = new TaskGraph("s1")
-                .transferToDevice(DataTransferMode.EVERY_EXECUTION, feature, paras, membership, tmp_cluster_centres, index, delta, new_centers, new_centers_len)
-                .task("t1", Kmeans::updateCentres, feature, paras, membership, tmp_cluster_centres, index, delta, new_centers, new_centers_len)
-                .transferToHost(DataTransferMode.EVERY_EXECUTION, feature, paras, membership, tmp_cluster_centres, index, delta, new_centers, new_centers_len);
-        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+        TaskGraph taskGraph2 = new TaskGraph("s2")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, feature, nfeatures, tmp_cluster_centres, nclusters, index, membership, new_centers_len,  new_centers, delta)
+                .task("t2", Kmeans::parallel, feature, nfeatures, tmp_cluster_centres, nclusters, index, membership, new_centers_len,  new_centers, delta)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, feature, tmp_cluster_centres, index, membership, new_centers_len, new_centers, delta);
+        ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
                 .withDevice(device);
+
         do {
             delta.set(0, 0.0);
-            executor1.execute();
-            //            for (int i = 0; i < paras.getY(); i++) {
-            //                /* find the index of nestest cluster centers */
-            //                find_nearest_point(feature[i], tmp_cluster_centres, index);
-            //                /* if membership changes, increase delta by 1 */
-            //                if (membership[i] != index.get(0)) {
-            //                    delta.set(0, delta.get(0) + 1.0);
-            //                }
-            //                /* assign the membership to object i */
-            //                membership[i] = index.get(0);
-            //                /* update new cluster centers : sum of objects located within */
-            //                new_centers_len[index.get(0)]++;
-            //                for (int j = 0; j < paras.getZ(); j++){
-            //                    new_centers[index.get(0)][j] += feature[i][j];
-            //                }
-            //            }
+            parallel(feature, nfeatures, tmp_cluster_centres, nclusters, index, membership, new_centers_len,  new_centers, delta);
+            //executor2.execute();
 
-            //updateCentres(feature, paras, membership, tmp_cluster_centres, index, delta, new_centers, new_centers_len);
-
-            //            /* replace old cluster centers with new_centers */
-            //            for (int i = 0; i < nclusters; i++) {
-            //                for (int j = 0; j < paras.getZ(); j++) {
-            //                    if (new_centers_len[i] > 0)
-            //                        tmp_cluster_centres[i][j] = new_centers[i][j] / new_centers_len[i];
-            //                    new_centers[i][j] = 0.0; /* set back to 0 */
-            //                }
-            //                new_centers_len[i] = 0; /* set back to 0 */
-            //            }
+            /* replace old cluster centers with new_centers */
+            for (i = 0; i < nclusters; i++) {
+                for (j = 0; j < nfeatures; j++) {
+                    if (new_centers_len[i] > 0){
+                        tmp_cluster_centres[i][j] = new_centers[i][j] / new_centers_len[i];
+                    }
+                    new_centers[i][j] = 0.0; /* set back to 0 */
+                }
+                new_centers_len[i] = 0; /* set back to 0 */
+            }
 
             //delta /= npoints;
-        } while (delta.get(0) > threshold.get(0));
+        } while (delta.get(0) > threshold);
 
         //return clusters;
     }
@@ -163,7 +149,7 @@ public class Kmeans {
                                int numAttributes, /* size of attribute of each object */
                                double[][] attributes, /* [numObjects][numAttributes] */
                                int num_nclusters,
-                               VectorDouble threshold, /* in:   */
+                               double threshold, /* in:   */
                                double[][] cluster_centres /* out: [best_nclusters][numAttributes] */
 
     ) {
@@ -174,11 +160,7 @@ public class Kmeans {
 
         nclusters = num_nclusters;
 
-        kmeans_clustering(attributes,
-                paras,
-                threshold,
-                membership,
-                tmp_cluster_centres);
+        kmeans_clustering(attributes, numAttributes, numObjects, nclusters, threshold, membership, tmp_cluster_centres);
 
         for (int i = 0; i < tmp_cluster_centres.length; i++) {
             for (int j = 0; j < cluster_centres[0].length; j++) {
@@ -198,11 +180,7 @@ public class Kmeans {
         numObjects = 0;
         String filename = args[0];
         nclusters = Integer.valueOf(args[1]);
-        // threshold = Double.valueOf(args[2]);
-        VectorDouble threshold = new VectorDouble(1);
-        threshold.set(0, Double.valueOf(args[2]));
-        paras = new Int3(); // num_clusters, numObjects, numAttributes
-        paras.setX(nclusters);
+        threshold = Double.valueOf(args[2]);
 
         /* from the input file, get the numAttributes and numObjects ------------*/
         try {
@@ -212,7 +190,6 @@ public class Kmeans {
                 numObjects++;
             }
             scanner.close();
-            paras.setY(numObjects);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -223,7 +200,6 @@ public class Kmeans {
             String[] nums = line.split(" ");
             numAttributes = nums.length - 1;
             scanner.close();
-            paras.setZ(numAttributes);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

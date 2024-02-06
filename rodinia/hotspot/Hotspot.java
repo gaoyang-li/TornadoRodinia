@@ -1,39 +1,25 @@
 package uk.ac.manchester.tornado.examples.rodinia.hotspot;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.Arrays;
+import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
+import uk.ac.manchester.tornado.api.TaskGraph;
+import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
+import uk.ac.manchester.tornado.api.annotations.Parallel;
+import uk.ac.manchester.tornado.api.common.TornadoDevice;
+import uk.ac.manchester.tornado.api.enums.DataTransferMode;
+import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
+import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
+import java.io.*;
 import java.util.Scanner;
-import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
-import uk.ac.manchester.tornado.api.TaskGraph;
-import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
-import uk.ac.manchester.tornado.api.annotations.Parallel;
-import uk.ac.manchester.tornado.api.collections.types.Double4;
-import uk.ac.manchester.tornado.api.collections.types.VectorDouble;
-import uk.ac.manchester.tornado.api.collections.types.VectorInt;
-import uk.ac.manchester.tornado.api.common.TornadoDevice;
-import uk.ac.manchester.tornado.api.enums.DataTransferMode;
-import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
-import uk.ac.manchester.tornado.api.TaskGraph;
-import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
-import uk.ac.manchester.tornado.api.annotations.Parallel;
-import uk.ac.manchester.tornado.api.common.TornadoDevice;
-import uk.ac.manchester.tornado.api.enums.DataTransferMode;
-import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-
 
 public class Hotspot {
-
-    static VectorDouble temp;
-    static VectorDouble power;
-    static VectorDouble result;
 
     public static double get_time() {
         return (double)(System.nanoTime()) / 1000000000;
     }
 
+    static double[] result;
+    static double[] temp;
+    static double[] power;
     static final int BLOCK_SIZE = 16;
     static final int BLOCK_SIZE_C = 16;
     static final int BLOCK_SIZE_R = 16;
@@ -52,93 +38,151 @@ public class Hotspot {
     static final double t_chip = 0.0005;
     static final double chip_height = 0.016;
     static final double chip_width = 0.016;
-    static VectorInt paras = new VectorInt(3);
 
     /* ambient temperature, assuming no package at all	*/
     static final double amb_temp = 80.0;
+
+    public static void parallel(double[] temp, double[] power, double[] result, VectorDouble delta, int num_chunk, int chunks_in_row, int chunks_in_col , int row, int col, double Cap_1, double Rx_1, double Ry_1, double Rz_1){
+        for (@Parallel int chunk = 0; chunk < num_chunk; ++chunk) {
+            int r_start = BLOCK_SIZE_R * (chunk / chunks_in_col);
+            int c_start = BLOCK_SIZE_C * (chunk % chunks_in_row);
+            int r_end = r_start + BLOCK_SIZE_R > row ? row : r_start + BLOCK_SIZE_R;
+            int c_end = c_start + BLOCK_SIZE_C > col ? col : c_start + BLOCK_SIZE_C;
+
+            if (r_start == 0 || c_start == 0 || r_end == row || c_end == col) {
+                for (int r = r_start; r < r_start + BLOCK_SIZE_R; ++r) {
+                    for (int c = c_start; c < c_start + BLOCK_SIZE_C; ++c) {
+                        int flagC2 = 1;
+                        int flagC3 = 1;
+                        int flagC4 = 1;
+                        int flagE1 = 1;
+                        int flagE2 = 1;
+                        int flagE3 = 1;
+                        int flagE4 = 1;
+                        int flag = 1;
+
+                        /* Corner 1 */
+                        if ((r == 0) && (c == 0) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[0] + (temp[1] - temp[0]) * Rx_1 + (temp[col] - temp[0]) * Ry_1 + (amb_temp - temp[0]) * Rz_1));
+                            flagC2 = 0;
+                            flagC3 = 0;
+                            flagC4 = 0;
+                            flagE1 = 0;
+                            flagE2 = 0;
+                            flagE3 = 0;
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Corner 2 */
+                        if ((r == 0) && (c == col - 1) && (flagC2 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[c] + (temp[c - 1] - temp[c]) * Rx_1 + (temp[c + col] - temp[c]) * Ry_1 + (amb_temp - temp[c]) * Rz_1));
+                            flagC3 = 0;
+                            flagC4 = 0;
+                            flagE1 = 0;
+                            flagE2 = 0;
+                            flagE3 = 0;
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Corner 3 */
+                        if ((r == row - 1) && (c == col - 1) && (flagC3 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[r * col + c] + (temp[r * col + c - 1] - temp[r * col + c]) * Rx_1 + (temp[(r - 1) * col + c] - temp[r * col + c]) * Ry_1 + (amb_temp - temp[r * col + c]) * Rz_1));
+                            flagC4 = 0;
+                            flagE1 = 0;
+                            flagE2 = 0;
+                            flagE3 = 0;
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Corner 4	*/
+                        if ((r == row - 1) && (c == 0) && (flagC4 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[r * col] + (temp[r * col + 1] - temp[r * col]) * Rx_1 + (temp[(r - 1) * col] - temp[r * col]) * Ry_1 + (amb_temp - temp[r * col]) * Rz_1));
+                            flagE1 = 0;
+                            flagE2 = 0;
+                            flagE3 = 0;
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Edge 1 */
+                        if ((r == 0) && (flagE1 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[c] + (temp[c + 1] + temp[c - 1] - 2.0 * temp[c]) * Rx_1 + (temp[col + c] - temp[c]) * Ry_1 + (amb_temp - temp[c]) * Rz_1));
+                            flagE2 = 0;
+                            flagE3 = 0;
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Edge 2 */
+                        if ((c == col - 1) && (flagE2 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[r * col + c] + (temp[(r + 1) * col + c] + temp[(r - 1) * col + c] - 2.0 * temp[r * col + c]) * Ry_1 + (temp[r * col + c - 1] - temp[r * col + c]) * Rx_1 + (amb_temp - temp[r * col + c]) * Rz_1));
+                            flagE3 = 0;
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Edge 3 */
+                        if ((r == row - 1) && (flagE3 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[r * col + c] + (temp[r * col + c + 1] + temp[r * col + c - 1] - 2.0 * temp[r * col + c]) * Rx_1 + (temp[(r - 1) * col + c] - temp[r * col + c]) * Ry_1 + (amb_temp - temp[r * col + c]) * Rz_1));
+                            flagE4 = 0;
+                            flag = 0;
+                        }
+                        /* Edge 4 */
+                        if ((c == 0) && (flagE4 == 1) && (flag == 1)) {
+                            delta.set(0, (Cap_1) * (power[r * col] + (temp[(r + 1) * col] + temp[(r - 1) * col] - 2.0 * temp[r * col]) * Ry_1 + (temp[r * col + 1] - temp[r * col]) * Rx_1 + (amb_temp - temp[r * col]) * Rz_1));
+                            flag = 0;
+                        }
+                        result[r * col + c] = temp[r * col + c] + delta.get(0);
+                    }
+                }
+                continue;
+            }
+
+            for (int r = r_start; r < r_start + BLOCK_SIZE_R; ++r) {
+                for (int c = c_start; c < c_start + BLOCK_SIZE_C; ++c) {
+                    result[r * col + c] = temp[r * col + c] + (Cap_1 * (power[r * col + c] + (temp[(r + 1) * col + c] + temp[(r - 1) * col + c] - 2.0 * temp[r * col + c]) * Ry_1 + (temp[r * col + c + 1] + temp[r * col + c - 1] - 2.0 * temp[r * col + c]) * Rx_1 + (amb_temp - temp[r * col + c]) * Rz_1));
+                }
+            }
+        }
+    }
 
     /* Single iteration of the transient solver in the grid model.
      * advances the solution of the discretized difference equations
      * by one time step
      */
-
-
-    //public static void single_iteration(VectorDouble result, VectorDouble temp, VectorDouble power, VectorInt paras, Double4 args) {
-    public static void single_iteration(VectorInt paras, VectorDouble args) {
-        double[] delta = new double[1];//double delta = 0.0;
-        delta[0] = 0.0;
+    public static void single_iteration(double[] result, double[] temp, double[] power, int row, int col, double Cap_1, double Rx_1, double Ry_1, double Rz_1, double step) {
+        VectorDouble delta = new VectorDouble(1);//double delta = 0.0;
+        delta.set(0, 0.0);
         //int r, c;
         //int chunk;
-        //int num_chunk = paras.get(1) * paras.get(2) / (BLOCK_SIZE_R * BLOCK_SIZE_C);
-        //int chunks_in_row = paras.get(2) / BLOCK_SIZE_C;
-        //int chunks_in_col = paras.get(1) / BLOCK_SIZE_R;
-
-        for (int chunk = 0; chunk < paras.get(0) * paras.get(1) / (16 * 16); ++chunk) {
-            //int r_start = 16 * (chunk / (paras.get(0) / 16));
-            //int c_start = 16 * (chunk % (paras.get(1) / 16));
-
-            int r_end = 16 * (chunk / (paras.get(0) / 16)) + 16 > paras.get(0) ? paras.get(0) : 16 * (chunk / (paras.get(0) / 16)) + 16;
-            int c_end = 16 * (chunk % (paras.get(1) / 16)) + 16 > paras.get(1) ? paras.get(1) : 16 * (chunk % (paras.get(1) / 16)) + 16;
-
-            if (16 * (chunk / (paras.get(0) / 16)) == 0 || 16 * (chunk % (paras.get(1) / 16)) == 0 || r_end == paras.get(0) || c_end == paras.get(1)) {
-                for (int r = 16 * (chunk / (paras.get(0) / 16)); r < 16 * (chunk / (paras.get(0) / 16)) + 16; ++r) {
-                    for (int c = 16 * (chunk % (paras.get(1) / 16)); c < 16 * (chunk % (paras.get(1) / 16)) + 16; ++c) {
-                        /* Corner 1 */
-                        if ((r == 0) && (c == 0)) {
-                            delta[0] = (args.get(0)) * (power.get(0) + (temp.get(1) - temp.get(0)) * args.get(1) + (temp.get(paras.get(1)) - temp.get(0)) * args.get(2) + (80.0 - temp.get(0)) * args.get(3));
-                        }
-                        /* Corner 2 */
-                        else if ((r == 0) && (c == paras.get(1) - 1)) {
-                            delta[0] = (args.get(0)) * (power.get(c) + (temp.get(c - 1) - temp.get(c)) * args.get(1) + (temp.get(c + paras.get(1)) - temp.get(c)) * args.get(2) + (80.0 - temp.get(c)) * args.get(3));
-                        }
-                        /* Corner 3 */
-                        else if ((r == paras.get(0) - 1) && (c == paras.get(1) - 1)) {
-                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1) + c) + (temp.get(r * paras.get(1) + c - 1) - temp.get(r * paras.get(1) + c)) * args.get(1) + (temp.get((r - 1) * paras.get(1) + c) - temp.get(r * paras.get(1) + c)) * args.get(2) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3));
-                        }
-                        /* Corner 4	*/
-                        else if ((r == paras.get(0) - 1) && (c == 0)) {
-                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1)) + (temp.get(r * paras.get(1) + 1) - temp.get(r * paras.get(1))) * args.get(1) + (temp.get((r - 1) * paras.get(1)) - temp.get(r * paras.get(1))) * args.get(2) + (80.0 - temp.get(r * paras.get(1))) * args.get(3));
-                        }
-                        /* Edge 1 */
-                        else if (r == 0) {
-                            delta[0] = (args.get(0)) * (power.get(c) + (temp.get(c + 1) + temp.get(c - 1) - 2.0 * temp.get(c)) * args.get(1) + (temp.get(paras.get(1) + c) - temp.get(c)) * args.get(2) + (80.0 - temp.get(c)) * args.get(3));
-                        }
-                        /* Edge 2 */
-                        else if (c == paras.get(1) - 1) {
-                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1) + c) + (temp.get((r + 1) * paras.get(1) + c) + temp.get((r - 1) * paras.get(1) + c) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(2) + (temp.get(r * paras.get(1) + c - 1) - temp.get(r * paras.get(1) + c)) * args.get(1) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3));
-                        }
-                        /* Edge 3 */
-                        else if (r == paras.get(0) - 1) {
-                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1) + c) + (temp.get(r * paras.get(1) + c + 1) + temp.get(r * paras.get(1) + c - 1) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(1) + (temp.get((r - 1) * paras.get(1) + c) - temp.get(r * paras.get(1) + c)) * args.get(2) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3));
-                        }
-                        /* Edge 4 */
-                        else if (c == 0) {
-                            delta[0] = (args.get(0)) * (power.get(r * paras.get(1)) + (temp.get((r + 1) * paras.get(1)) + temp.get((r - 1) * paras.get(1)) - 2.0 * temp.get(r * paras.get(1))) * args.get(2) + (temp.get(r * paras.get(1) + 1) - temp.get(r * paras.get(1))) * args.get(1) + (80.0 - temp.get(r * paras.get(1))) * args.get(3));
-                        }
-                        result.set(r * paras.get(1) + c, temp.get(r * paras.get(1) + c) + delta[0]);
-                    }
-                }
-                //continue;
-            }
-
-            for (int r = 16 * (chunk / (paras.get(0) / 16)); r < 16 * (chunk / (paras.get(0) / 16)) + 16; ++r) {
-                for (int c = 16 * (chunk % (paras.get(1) / 16)); c < 16 * (chunk % (paras.get(1) / 16)) + 16; ++c) {
-                    result.set(r * paras.get(1) + c, temp.get(r * paras.get(1) + c) + (args.get(0) * (power.get(r * paras.get(1) + c) + (temp.get((r + 1) * paras.get(1) + c) + temp.get((r - 1) * paras.get(1) + c) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(2) + (temp.get(r * paras.get(1) + c + 1) + temp.get(r * paras.get(1) + c - 1) - 2.0 * temp.get(r * paras.get(1) + c)) * args.get(1) + (80.0 - temp.get(r * paras.get(1) + c)) * args.get(3))));
-                }
-            }
+        int num_chunk = row * col / (BLOCK_SIZE_R * BLOCK_SIZE_C);
+        int chunks_in_row = col / BLOCK_SIZE_C;
+        int chunks_in_col = row / BLOCK_SIZE_R;
+        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+        TaskGraph taskGraph2 = new TaskGraph("s2")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, temp, power, result, delta, num_chunk, chunks_in_row, chunks_in_col, row, col, Cap_1, Rx_1, Ry_1, Rz_1)
+                .task("t2", Hotspot::parallel, temp, power, result, delta, num_chunk, chunks_in_row, chunks_in_col, row, col, Cap_1, Rx_1, Ry_1, Rz_1)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, temp, result);
+        ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
+                .withDevice(device);
+        executor2.execute();
+        //parallel(temp,  power, result, delta,  num_chunk,  chunks_in_row, chunks_in_col , row, col,  Cap_1,  Rx_1,  Ry_1,  Rz_1);
+        double[] tmp = new double[temp.length];
+        for (int i = 0; i < temp.length; i++){
+            temp[i] = result[i];
         }
-        //System.out.println("lgy single" + Arrays.toString(result));
+        for (int i = 0; i < temp.length; i++){
+            result[i] = tmp[i];
+        }
     }
 
     /* Transient solver driver routine: simply converts the heat
      * transfer differential equations to difference equations
      * and solves the difference equations by iterating
      */
-    public static void compute_tran_temp(VectorDouble result, VectorDouble temp, VectorDouble power, VectorInt paras) {
+    public static void compute_tran_temp(double[] result, int num_iterations, double[] temp, double[] power, int row, int col) {
         int i = 0;
 
-        double grid_height = chip_height / paras.get(0);
-        double grid_width = chip_width / paras.get(1);
+        double grid_height = chip_height / row;
+        double grid_width = chip_width / col;
 
         double Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_width * grid_height;
         double Rx = grid_width / (2.0 * K_SI * t_chip * grid_height);
@@ -152,79 +196,59 @@ public class Hotspot {
         double Ry_1 = 1.0 / Ry;
         double Rz_1 = 1.0 / Rz;
         double Cap_1 = step / Cap;
-
-        VectorDouble args = new VectorDouble(4);
-        args.set(0, Cap_1);//args.setW(Cap_1);
-        args.set(1, Rx_1);;//args.setX(Rx_1);
-        args.set(2, Ry_1);//args.setY(Ry_1);
-        args.set(3, Rz_1);//args.setZ(Rz_1);
-
-        System.out.printf("total iterations: %d s\tstep size: %g s\n", paras.get(2), step);
+        System.out.printf("total iterations: %d s\tstep size: %g s\n", num_iterations, step);
         System.out.printf("Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
 
-        //int array_size = paras.get(1) * paras.get(2);
+        int array_size = row * col;
 
-        //{
-            //VectorDouble r = result;
-            //VectorDouble t = temp;
-            TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-            TaskGraph taskGraph1 = new TaskGraph("s1")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, paras, args)
-                    .task("t1", Hotspot::single_iteration, paras, args)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, paras, args);
-            ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-            TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                    .withDevice(device);
-            for ( i = 0; i < paras.get(2); i++) {
+//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+//        TaskGraph taskGraph1 = new TaskGraph("s1")
+//                .transferToDevice(DataTransferMode.EVERY_EXECUTION, result, temp, power, row, col, Cap_1, Rx_1, Ry_1, Rz_1, step)
+//                .task("t1", Hotspot::single_iteration, result, temp, power, row, col, Cap_1, Rx_1, Ry_1, Rz_1, step)
+//                .transferToHost(DataTransferMode.EVERY_EXECUTION, result, temp, power);
+//        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
+//        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+//                .withDevice(device);
+
+        {
+            for (i = 0; i < num_iterations; i++) {
                 System.out.printf("iteration %d\n", i++);
-                //single_iteration(paras, args);
-//                TaskGraph taskGraph1 = new TaskGraph("s1")
-//                        .transferToDevice(DataTransferMode.EVERY_EXECUTION, t, power, paras, args)
-//                        .task("t1", Hotspot::single_iteration, r, t, power, paras, args)
-//                        .transferToHost(DataTransferMode.EVERY_EXECUTION, r);
-//                ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-//                TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-//                        .withDevice(device);
-                executor1.execute();
-                VectorDouble tmp = temp;
-                temp = result;
-                result = tmp;
+                //executor1.execute();
+                single_iteration(result, temp, power, row, col, Cap_1, Rx_1, Ry_1, Rz_1, step);
             }
-            //System.out.println("compute r" + Arrays.toString(r));
-            //System.out.println("compute t" + Arrays.toString(t));
-            //result = r;
-        //}
+        }
+
         System.out.printf("iteration %d\n", i++);
     }
 
-    public static void writeOutput(VectorDouble vect, VectorInt paras, String file) {
+    public static void writeOutput(double[] vect, int grid_rows, int grid_cols, String file) {
         int i,j, index=0;
         try {
             PrintWriter writer = new PrintWriter(file);
-            for (i = 0; i < paras.get(0); i++) {
-                for (j=0; j< paras.get(1); j++){
-                    writer.printf("%d\t%f\n", index, vect.get(i*paras.get(1)+j));
+            for (i = 0; i < grid_rows; i++) {
+                for (j=0; j<grid_cols; j++){
+                    writer.printf("%d\t%f\n", index, vect[i*grid_cols+j]);
                     index++;
                 }
             }
             writer.close();
             System.out.println("Result stored in " + file);
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             System.out.println("Error writing to the output file");
         }
     }
 
-    public static void readInput(VectorDouble vect, VectorInt paras, String file) {
+    public static void readInput(double[] vect, int grid_rows, int grid_cols, String file) {
         Scanner scanner = null;
         try {
             scanner = new Scanner(new File(file));
-            for (int i=0; i<paras.get(0)*paras.get(1); i++){
+            for (int i=0; i<grid_rows*grid_cols; i++){
                 if (!scanner.hasNextDouble()){
                     System.out.println("not enough lines in file");
                     System.exit(1);
                 }
                 else{
-                    vect.set(i, scanner.nextDouble());
+                    vect[i] = scanner.nextDouble();
                 }
             }
         } catch (FileNotFoundException e) {
@@ -235,28 +259,25 @@ public class Hotspot {
     public static void main(String[] args){
         int grid_rows, grid_cols, sim_time, i;
         String tfile, pfile, ofile;
-//        VectorDouble temp;
-//        VectorDouble power;
-//        VectorDouble result;
+//        double[] temp;
+//        double[] power;
+//        double[] result;
         grid_rows = Integer.parseInt(args[0]);
         grid_cols = Integer.parseInt(args[1]);
         sim_time =  Integer.parseInt(args[2]);
-        paras.set(0, grid_rows);
-        paras.set(1, grid_cols);
-        paras.set(2, sim_time);
-        temp = new VectorDouble(grid_rows*grid_cols);
-        power = new VectorDouble(grid_rows*grid_cols);
-        result = new VectorDouble(grid_rows*grid_cols);
+        temp = new double[grid_rows*grid_cols];
+        power = new double[grid_rows*grid_cols];
+        result = new double[grid_rows*grid_cols];
         tfile = args[3];
         pfile = args[4];
         ofile = args[5];
-        readInput(temp, paras, tfile);
-        readInput(power, paras, pfile);
+        readInput(temp, grid_rows, grid_cols, tfile);
+        readInput(power, grid_rows, grid_cols, pfile);
         //System.out.println("lgy temp" + Arrays.toString(temp));
         //System.out.println("lgy power" + Arrays.toString(power));
-        compute_tran_temp(result, temp, power, paras);
+        compute_tran_temp(result, sim_time, temp, power, grid_rows, grid_cols);
         //System.out.println("lgy" +  Arrays.toString(result));
-        writeOutput((1&sim_time)==1 ? result : temp, paras, ofile);
+        writeOutput((1&sim_time)==1 ? result : temp, grid_rows, grid_cols, ofile);
         //writeOutput(result, grid_rows, grid_cols, ofile);
     }
 

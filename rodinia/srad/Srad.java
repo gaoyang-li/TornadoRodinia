@@ -1,10 +1,5 @@
 package uk.ac.manchester.tornado.examples.rodinia.srad;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.Scanner;
-
 import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
@@ -12,16 +7,9 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-import uk.ac.manchester.tornado.api.collections.types.Int2;
-import uk.ac.manchester.tornado.api.collections.types.Int3;
-import uk.ac.manchester.tornado.api.collections.types.Int4;
-import uk.ac.manchester.tornado.api.collections.types.Int8;
-import uk.ac.manchester.tornado.api.collections.types.VectorDouble;
-import uk.ac.manchester.tornado.api.collections.types.VectorInt;
-import uk.ac.manchester.tornado.api.collections.types.VectorInt2;
-import uk.ac.manchester.tornado.api.collections.types.VectorInt3;
-import uk.ac.manchester.tornado.api.collections.types.VectorInt4;
-import uk.ac.manchester.tornado.api.collections.types.VectorInt8;
+import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
+import uk.ac.manchester.tornado.api.types.collections.VectorInt;
+
 
 import java.util.Random;
 
