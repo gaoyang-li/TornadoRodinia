@@ -50,9 +50,9 @@ public class Bfs {
                 h_graph_nodes_starting.set(i, h_graph_nodes_starting.get(i));
                 h_graph_nodes_edges.set(i, h_graph_nodes_edges.get(i));
             }
-            VectorInt h_graph_mask = new VectorInt(no_of_nodes); // boolean[] h_graph_mask = new boolean[no_of_nodes];
-            VectorInt h_updating_graph_mask = new VectorInt(no_of_nodes); // boolean[] h_updating_graph_mask = new boolean[no_of_nodes];
-            VectorInt h_graph_visited = new VectorInt(no_of_nodes); // boolean[] h_graph_visited = new boolean[no_of_nodes];
+            VectorInt h_graph_mask = new VectorInt(no_of_nodes);
+            VectorInt h_updating_graph_mask = new VectorInt(no_of_nodes);
+            VectorInt h_graph_visited = new VectorInt(no_of_nodes);
             int source = scanner.nextInt();
             h_graph_mask.set(source, 1);
             h_graph_visited.set(source, 1);
@@ -66,7 +66,7 @@ public class Bfs {
             h_cost.set(source, 0);
             traverseGraph(num_threads, no_of_nodes, h_graph_edges, h_graph_mask, h_updating_graph_mask, h_graph_visited, h_cost);
             writeResultsToFile(h_cost);
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             System.out.println("Error Reading graph file");
         }
     }
@@ -82,7 +82,7 @@ public class Bfs {
         VectorInt edges = new VectorInt(edge_list_size);
         for (int i = 0; i < edge_list_size; i++) {
             edges.set(i, scanner.nextInt());
-            scanner.nextInt(); // cost, currently not used
+            scanner.nextInt();
         }
         return edges;
     }
@@ -134,17 +134,17 @@ public class Bfs {
                 .withDevice(device);
 
         long startTime = System.nanoTime();
-        int loops = 0;
+//        int loops = 0;
         do {
             stop.set(0, 0);
             executor1.execute();
             executor2.execute();
-            loops++;
-//             initMask(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
-//             updateMask(h_updating_graph_mask, h_graph_mask, h_graph_visited, stop);
+//          loops++;
+//          initMask(h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask);
+//          updateMask(h_updating_graph_mask, h_graph_mask, h_graph_visited, stop);
         } while (stop.get(0) == 1);
         long endTime = System.nanoTime();
-//        System.out.println("loops: " + loops);
+//      System.out.println("loops: " + loops);
         System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
     }
 
@@ -156,7 +156,7 @@ public class Bfs {
             }
             writer.close();
             System.out.println("Result stored in result.txt");
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             System.out.println("Error writing to result.txt");
         }
     }

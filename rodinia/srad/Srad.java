@@ -45,7 +45,7 @@ public class Srad {
 
     public static void parallel1(VectorInt intParas, VectorDouble doubleParas, VectorDouble J, VectorDouble dN, VectorDouble dS, VectorDouble dW, VectorDouble dE, VectorInt iN, VectorInt iS, VectorInt jW, VectorInt jE, VectorDouble c) {
         for (@Parallel int i = 0; i < intParas.get(0); i++) {
-            for (@Parallel int j = 0; j < intParas.get(1); j++) {
+            for (int j = 0; j < intParas.get(1); j++) {
                 int k = i * intParas.get(1) + j;
                 double Jc = J.get(k);
                 // directional derivatives
@@ -74,7 +74,7 @@ public class Srad {
 
     public static void parallel2(VectorInt intParas, VectorDouble doubleParas, VectorDouble c, VectorInt iS, VectorDouble dN, VectorDouble dS, VectorDouble dW, VectorDouble dE, VectorInt jE, VectorDouble J) {
         for (@Parallel int i = 0; i < intParas.get(0); i++) {
-            for (@Parallel int j = 0; j < intParas.get(1); j++) {
+            for (int j = 0; j < intParas.get(1); j++) {
                 // current index
                 int k = i * intParas.get(1) + j;
                 // diffusion coefficient
