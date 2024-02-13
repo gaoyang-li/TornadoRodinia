@@ -150,7 +150,7 @@ public class Bfs {
 
     private static void writeResultsToFile(VectorInt h_cost) {
         try {
-            PrintWriter writer = new PrintWriter("result.txt");
+            PrintWriter writer = new PrintWriter("tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/bfs/result.txt");
             for (int i = 0; i < h_cost.size(); i++) {
                 writer.printf("%d) cost:%d%n", i, h_cost.get(i));
             }
