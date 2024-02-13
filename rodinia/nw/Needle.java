@@ -13,56 +13,655 @@ import java.io.*;
 import java.util.Random;
 import java.util.Arrays;
 
-
 public class Needle {
     final static int BLOCK_SIZE = 16;
     final static int LIMIT = -999;
     static VectorInt reference;
     static VectorInt input_itemsets;
     static int[][] blosum62 = {
-            { 4, -1, -2, -2,  0, -1, -1,  0, -2, -1, -1, -1, -1, -2, -1,  1,  0, -3, -2,  0, -2, -1,  0, -4},
-            {-1,  5,  0, -2, -3,  1,  0, -2,  0, -3, -2,  2, -1, -3, -2, -1, -1, -3, -2, -3, -1,  0, -1, -4},
-            {-2,  0,  6,  1, -3,  0,  0,  0,  1, -3, -3,  0, -2, -3, -2,  1,  0, -4, -2, -3,  3,  0, -1, -4},
-            {-2, -2,  1,  6, -3,  0,  2, -1, -1, -3, -4, -1, -3, -3, -1,  0, -1, -4, -3, -3,  4,  1, -1, -4},
-            { 0, -3, -3, -3,  9, -3, -4, -3, -3, -1, -1, -3, -1, -2, -3, -1, -1, -2, -2, -1, -3, -3, -2, -4},
-            {-1,  1,  0,  0, -3,  5,  2, -2,  0, -3, -2,  1,  0, -3, -1,  0, -1, -2, -1, -2,  0,  3, -1, -4},
-            {-1,  0,  0,  2, -4,  2,  5, -2,  0, -3, -3,  1, -2, -3, -1,  0, -1, -3, -2, -2,  1,  4, -1, -4},
-            { 0, -2,  0, -1, -3, -2, -2,  6, -2, -4, -4, -2, -3, -3, -2,  0, -2, -2, -3, -3, -1, -2, -1, -4},
-            {-2,  0,  1, -1, -3,  0,  0, -2,  8, -3, -3, -1, -2, -1, -2, -1, -2, -2,  2, -3,  0,  0, -1, -4},
-            {-1, -3, -3, -3, -1, -3, -3, -4, -3,  4,  2, -3,  1,  0, -3, -2, -1, -3, -1,  3, -3, -3, -1, -4},
-            {-1, -2, -3, -4, -1, -2, -3, -4, -3,  2,  4, -2,  2,  0, -3, -2, -1, -2, -1,  1, -4, -3, -1, -4},
-            {-1,  2,  0, -1, -3,  1,  1, -2, -1, -3, -2,  5, -1, -3, -1,  0, -1, -3, -2, -2,  0,  1, -1, -4},
-            {-1, -1, -2, -3, -1,  0, -2, -3, -2,  1,  2, -1,  5,  0, -2, -1, -1, -1, -1,  1, -3, -1, -1, -4},
-            {-2, -3, -3, -3, -2, -3, -3, -3, -1,  0,  0, -3,  0,  6, -4, -2, -2,  1,  3, -1, -3, -3, -1, -4},
-            {-1, -2, -2, -1, -3, -1, -1, -2, -2, -3, -3, -1, -2, -4,  7, -1, -1, -4, -3, -2, -2, -1, -2, -4},
-            { 1, -1,  1,  0, -1,  0,  0,  0, -1, -2, -2,  0, -1, -2, -1,  4,  1, -3, -2, -2,  0,  0,  0, -4},
-            { 0, -1,  0, -1, -1, -1, -1, -2, -2, -1, -1, -1, -1, -2, -1,  1,  5, -2, -2,  0, -1, -1,  0, -4},
-            {-3, -3, -4, -4, -2, -2, -3, -2, -2, -3, -2, -3, -1,  1, -4, -3, -2, 11,  2, -3, -4, -3, -2, -4},
-            {-2, -2, -2, -3, -2, -1, -2, -3,  2, -1, -1, -2, -1,  3, -3, -2, -2,  2,  7, -1, -3, -2, -1, -4},
-            { 0, -3, -3, -3, -1, -2, -2, -3, -3,  3,  1, -2,  1, -1, -2, -2,  0, -3, -1,  4, -3, -2, -1, -4},
-            {-2, -1,  3,  4, -3,  0,  1, -1,  0, -3, -4,  0, -3, -3, -2,  0, -1, -4, -3, -3,  4,  1, -1, -4},
-            {-1,  0,  0,  1, -3,  3,  4, -2,  0, -3, -3,  1, -1, -3, -1,  0, -1, -3, -2, -2,  1,  4, -1, -4},
-            { 0, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2,  0,  0, -2, -1, -1, -1, -1, -1, -4},
-            {-4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4,  1}
+            {
+                    4,
+                    -1,
+                    -2,
+                    -2,
+                    0,
+                    -1,
+                    -1,
+                    0,
+                    -2,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -2,
+                    -1,
+                    1,
+                    0,
+                    -3,
+                    -2,
+                    0,
+                    -2,
+                    -1,
+                    0,
+                    -4
+            },
+            {
+                    -1,
+                    5,
+                    0,
+                    -2,
+                    -3,
+                    1,
+                    0,
+                    -2,
+                    0,
+                    -3,
+                    -2,
+                    2,
+                    -1,
+                    -3,
+                    -2,
+                    -1,
+                    -1,
+                    -3,
+                    -2,
+                    -3,
+                    -1,
+                    0,
+                    -1,
+                    -4
+            },
+            {
+                    -2,
+                    0,
+                    6,
+                    1,
+                    -3,
+                    0,
+                    0,
+                    0,
+                    1,
+                    -3,
+                    -3,
+                    0,
+                    -2,
+                    -3,
+                    -2,
+                    1,
+                    0,
+                    -4,
+                    -2,
+                    -3,
+                    3,
+                    0,
+                    -1,
+                    -4
+            },
+            {
+                    -2,
+                    -2,
+                    1,
+                    6,
+                    -3,
+                    0,
+                    2,
+                    -1,
+                    -1,
+                    -3,
+                    -4,
+                    -1,
+                    -3,
+                    -3,
+                    -1,
+                    0,
+                    -1,
+                    -4,
+                    -3,
+                    -3,
+                    4,
+                    1,
+                    -1,
+                    -4
+            },
+            {
+                    0,
+                    -3,
+                    -3,
+                    -3,
+                    9,
+                    -3,
+                    -4,
+                    -3,
+                    -3,
+                    -1,
+                    -1,
+                    -3,
+                    -1,
+                    -2,
+                    -3,
+                    -1,
+                    -1,
+                    -2,
+                    -2,
+                    -1,
+                    -3,
+                    -3,
+                    -2,
+                    -4
+            },
+            {
+                    -1,
+                    1,
+                    0,
+                    0,
+                    -3,
+                    5,
+                    2,
+                    -2,
+                    0,
+                    -3,
+                    -2,
+                    1,
+                    0,
+                    -3,
+                    -1,
+                    0,
+                    -1,
+                    -2,
+                    -1,
+                    -2,
+                    0,
+                    3,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    0,
+                    0,
+                    2,
+                    -4,
+                    2,
+                    5,
+                    -2,
+                    0,
+                    -3,
+                    -3,
+                    1,
+                    -2,
+                    -3,
+                    -1,
+                    0,
+                    -1,
+                    -3,
+                    -2,
+                    -2,
+                    1,
+                    4,
+                    -1,
+                    -4
+            },
+            {
+                    0,
+                    -2,
+                    0,
+                    -1,
+                    -3,
+                    -2,
+                    -2,
+                    6,
+                    -2,
+                    -4,
+                    -4,
+                    -2,
+                    -3,
+                    -3,
+                    -2,
+                    0,
+                    -2,
+                    -2,
+                    -3,
+                    -3,
+                    -1,
+                    -2,
+                    -1,
+                    -4
+            },
+            {
+                    -2,
+                    0,
+                    1,
+                    -1,
+                    -3,
+                    0,
+                    0,
+                    -2,
+                    8,
+                    -3,
+                    -3,
+                    -1,
+                    -2,
+                    -1,
+                    -2,
+                    -1,
+                    -2,
+                    -2,
+                    2,
+                    -3,
+                    0,
+                    0,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    -3,
+                    -3,
+                    -3,
+                    -1,
+                    -3,
+                    -3,
+                    -4,
+                    -3,
+                    4,
+                    2,
+                    -3,
+                    1,
+                    0,
+                    -3,
+                    -2,
+                    -1,
+                    -3,
+                    -1,
+                    3,
+                    -3,
+                    -3,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    -2,
+                    -3,
+                    -4,
+                    -1,
+                    -2,
+                    -3,
+                    -4,
+                    -3,
+                    2,
+                    4,
+                    -2,
+                    2,
+                    0,
+                    -3,
+                    -2,
+                    -1,
+                    -2,
+                    -1,
+                    1,
+                    -4,
+                    -3,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    2,
+                    0,
+                    -1,
+                    -3,
+                    1,
+                    1,
+                    -2,
+                    -1,
+                    -3,
+                    -2,
+                    5,
+                    -1,
+                    -3,
+                    -1,
+                    0,
+                    -1,
+                    -3,
+                    -2,
+                    -2,
+                    0,
+                    1,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    -1,
+                    -2,
+                    -3,
+                    -1,
+                    0,
+                    -2,
+                    -3,
+                    -2,
+                    1,
+                    2,
+                    -1,
+                    5,
+                    0,
+                    -2,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    1,
+                    -3,
+                    -1,
+                    -1,
+                    -4
+            },
+            {
+                    -2,
+                    -3,
+                    -3,
+                    -3,
+                    -2,
+                    -3,
+                    -3,
+                    -3,
+                    -1,
+                    0,
+                    0,
+                    -3,
+                    0,
+                    6,
+                    -4,
+                    -2,
+                    -2,
+                    1,
+                    3,
+                    -1,
+                    -3,
+                    -3,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    -2,
+                    -2,
+                    -1,
+                    -3,
+                    -1,
+                    -1,
+                    -2,
+                    -2,
+                    -3,
+                    -3,
+                    -1,
+                    -2,
+                    -4,
+                    7,
+                    -1,
+                    -1,
+                    -4,
+                    -3,
+                    -2,
+                    -2,
+                    -1,
+                    -2,
+                    -4
+            },
+            {
+                    1,
+                    -1,
+                    1,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    -1,
+                    -2,
+                    -2,
+                    0,
+                    -1,
+                    -2,
+                    -1,
+                    4,
+                    1,
+                    -3,
+                    -2,
+                    -2,
+                    0,
+                    0,
+                    0,
+                    -4
+            },
+            {
+                    0,
+                    -1,
+                    0,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -2,
+                    -2,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -2,
+                    -1,
+                    1,
+                    5,
+                    -2,
+                    -2,
+                    0,
+                    -1,
+                    -1,
+                    0,
+                    -4
+            },
+            {
+                    -3,
+                    -3,
+                    -4,
+                    -4,
+                    -2,
+                    -2,
+                    -3,
+                    -2,
+                    -2,
+                    -3,
+                    -2,
+                    -3,
+                    -1,
+                    1,
+                    -4,
+                    -3,
+                    -2,
+                    11,
+                    2,
+                    -3,
+                    -4,
+                    -3,
+                    -2,
+                    -4
+            },
+            {
+                    -2,
+                    -2,
+                    -2,
+                    -3,
+                    -2,
+                    -1,
+                    -2,
+                    -3,
+                    2,
+                    -1,
+                    -1,
+                    -2,
+                    -1,
+                    3,
+                    -3,
+                    -2,
+                    -2,
+                    2,
+                    7,
+                    -1,
+                    -3,
+                    -2,
+                    -1,
+                    -4
+            },
+            {
+                    0,
+                    -3,
+                    -3,
+                    -3,
+                    -1,
+                    -2,
+                    -2,
+                    -3,
+                    -3,
+                    3,
+                    1,
+                    -2,
+                    1,
+                    -1,
+                    -2,
+                    -2,
+                    0,
+                    -3,
+                    -1,
+                    4,
+                    -3,
+                    -2,
+                    -1,
+                    -4
+            },
+            {
+                    -2,
+                    -1,
+                    3,
+                    4,
+                    -3,
+                    0,
+                    1,
+                    -1,
+                    0,
+                    -3,
+                    -4,
+                    0,
+                    -3,
+                    -3,
+                    -2,
+                    0,
+                    -1,
+                    -4,
+                    -3,
+                    -3,
+                    4,
+                    1,
+                    -1,
+                    -4
+            },
+            {
+                    -1,
+                    0,
+                    0,
+                    1,
+                    -3,
+                    3,
+                    4,
+                    -2,
+                    0,
+                    -3,
+                    -3,
+                    1,
+                    -1,
+                    -3,
+                    -1,
+                    0,
+                    -1,
+                    -3,
+                    -2,
+                    -2,
+                    1,
+                    4,
+                    -1,
+                    -4
+            },
+            {
+                    0,
+                    -1,
+                    -1,
+                    -1,
+                    -2,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -2,
+                    0,
+                    0,
+                    -2,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    -4
+            },
+            {
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    -4,
+                    1
+            }
     };
 
-    public static void printInput(){
+    public static void printInput() {
         System.out.print("lgy:input:");
-        for (int i = 0; i < 500; i++){
+        for (int i = 0; i < 500; i++) {
             System.out.print(input_itemsets.get(i) + " ");
         }
         System.out.println();
     }
 
-    public static void printRef(){
+    public static void printRef() {
         System.out.print("lgy:ref:");
-        for (int i = 0; i < 500; i++){
+        for (int i = 0; i < 500; i++) {
             System.out.print(reference.get(i) + " ");
         }
         System.out.println();
     }
 
-    public static int maximum(int a, int b, int c){
+    public static int maximum(int a, int b, int c) {
         return Math.max(a, Math.max(b, c));
     }
 
@@ -74,7 +673,7 @@ public class Needle {
         System.exit(1);
     }
 
-    public static void parallel1(VectorInt input_itemsets, VectorInt reference, VectorInt paras, VectorInt blk){
+    public static void parallel1(VectorInt input_itemsets, VectorInt reference, VectorInt paras, VectorInt blk) {
         for (@Parallel int b_index_x = 0; b_index_x < blk.get(0); ++b_index_x) {
             int b_index_y = blk.get(0) - 1 - b_index_x;
             int[] input_itemsets_l = new int[(BLOCK_SIZE + 1) * (BLOCK_SIZE + 1)];
@@ -112,23 +711,23 @@ public class Needle {
         }
     }
 
-    public static void parallel2(VectorInt input_itemsets, VectorInt reference, VectorInt paras, VectorInt blk){
-        for (int b_index_x = blk.get(0) - 1; b_index_x < (paras.get(1) - 1) / BLOCK_SIZE; ++b_index_x) {
-            int b_index_y = (paras.get(1) - 1) / BLOCK_SIZE + blk.get(0) - 2 - b_index_x;
+    public static void parallel2(VectorInt input_itemsets, VectorInt reference, VectorInt paras, VectorInt blk) {
+        for (@Parallel int b_index_x = 0; b_index_x < ((paras.get(1) - 1) / BLOCK_SIZE) - (blk.get(0) - 1); ++b_index_x) {
+            int b_index_y = (paras.get(1) - 1) / BLOCK_SIZE + blk.get(0) - 2 - (b_index_x + blk.get(0) - 1);
             int[] input_itemsets_l = new int[(BLOCK_SIZE + 1) * (BLOCK_SIZE + 1)];
             int[] reference_l = new int[BLOCK_SIZE * BLOCK_SIZE];
 
             // Copy referrence to local memory
             for (int i = 0; i < BLOCK_SIZE; ++i) {
                 for (int j = 0; j < BLOCK_SIZE; ++j) {
-                    reference_l[i * BLOCK_SIZE + j] = reference.get(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + b_index_x * BLOCK_SIZE + j + 1);
+                    reference_l[i * BLOCK_SIZE + j] = reference.get(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j + 1);
                 }
             }
 
             // Copy input_itemsets to local memory
             for (int i = 0; i < BLOCK_SIZE + 1; ++i) {
                 for (int j = 0; j < BLOCK_SIZE + 1; ++j) {
-                    input_itemsets_l[i * (BLOCK_SIZE + 1) + j] = input_itemsets.get(paras.get(1) * (b_index_y * BLOCK_SIZE + i) + b_index_x * BLOCK_SIZE + j);
+                    input_itemsets_l[i * (BLOCK_SIZE + 1) + j] = input_itemsets.get(paras.get(1) * (b_index_y * BLOCK_SIZE + i) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j);
                 }
             }
 
@@ -144,7 +743,7 @@ public class Needle {
             // Copy results to global memory
             for (int i = 0; i < BLOCK_SIZE; ++i) {
                 for (int j = 0; j < BLOCK_SIZE; ++j) {
-                    input_itemsets.set(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + b_index_x * BLOCK_SIZE + j + 1, input_itemsets_l[(i + 1) * (BLOCK_SIZE + 1) + j + 1]);
+                    input_itemsets.set(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j + 1, input_itemsets_l[(i + 1) * (BLOCK_SIZE + 1) + j + 1]);
                 }
             }
         }
@@ -156,7 +755,7 @@ public class Needle {
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras, blkk)
                 .task("t1", Needle::parallel1, input_itemsets, reference, paras, blkk)
-                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras);
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
         TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
                 .withDevice(device);
@@ -173,7 +772,7 @@ public class Needle {
         TaskGraph taskGraph2 = new TaskGraph("s2")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras, blkk)
                 .task("t2", Needle::parallel2, input_itemsets, reference, paras, blkk)
-                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras);
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
         TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
                 .withDevice(device);
@@ -184,7 +783,7 @@ public class Needle {
         }
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         int max_rows = 0;
         int max_cols = 0;
         int penalty = 0;
@@ -197,14 +796,13 @@ public class Needle {
             max_cols = Integer.parseInt(args[0]);
             penalty = Integer.parseInt(args[1]);
             //omp_num_threads = Integer.parseInt(args[2]);
-        }
-        else {
+        } else {
             usage(args);
         }
         max_rows = max_rows + 1;
         max_cols = max_cols + 1;
-//        VectorInt reference = new VectorInt(max_rows * max_cols);
-//        VectorInt input_itemsets = new VectorInt(max_rows * max_cols);
+        //        VectorInt reference = new VectorInt(max_rows * max_cols);
+        //        VectorInt input_itemsets = new VectorInt(max_rows * max_cols);
         reference = new VectorInt(max_rows * max_cols);
         input_itemsets = new VectorInt(max_rows * max_cols);
 
@@ -235,10 +833,10 @@ public class Needle {
             }
         }
 
-        for (int i = 1; i < max_rows; i++){
+        for (int i = 1; i < max_rows; i++) {
             input_itemsets.set(i * max_cols, -i * penalty);
         }
-        for (int j = 1; j < max_cols; j++){
+        for (int j = 1; j < max_cols; j++) {
             input_itemsets.set(j, -j * penalty);
         }
 
@@ -246,21 +844,21 @@ public class Needle {
         //System.out.println("Num of threads: " + omp_num_threads);
         System.out.println("Processing top-left matrix");
         long startTime = System.nanoTime();
-//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-//        TaskGraph taskGraph1 = new TaskGraph("s1")
-//                .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras)
-//                .task("t1", Needle::nw_optimized1, input_itemsets, reference, paras)
-//                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets);
-//        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-//        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-//                .withDevice(device);
-//        TaskGraph taskGraph2 = new TaskGraph("s2")
-//                .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras)
-//                .task("t2", Needle::nw_optimized2, input_itemsets, reference, paras)
-//                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras);
-//        ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-//        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
-//                .withDevice(device);
+        //        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+        //        TaskGraph taskGraph1 = new TaskGraph("s1")
+        //                .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras)
+        //                .task("t1", Needle::nw_optimized1, input_itemsets, reference, paras)
+        //                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets);
+        //        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
+        //        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+        //                .withDevice(device);
+        //        TaskGraph taskGraph2 = new TaskGraph("s2")
+        //                .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras)
+        //                .task("t2", Needle::nw_optimized2, input_itemsets, reference, paras)
+        //                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras);
+        //        ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
+        //        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
+        //                .withDevice(device);
 
         //printInput();
         //printRef();
@@ -290,10 +888,10 @@ public class Needle {
                 int n = 0;
                 int w = 0;
                 int traceback = 0;
-                if (i == max_rows - 2 && j == max_rows - 2){
+                if (i == max_rows - 2 && j == max_rows - 2) {
                     writer.print(input_itemsets.get(i * max_cols + j) + " ");
                 }
-                if (i == 0 && j == 0){
+                if (i == 0 && j == 0) {
                     break;
                 }
                 if (i > 0 && j > 0) {
@@ -340,4 +938,3 @@ public class Needle {
     }
 
 }
-
