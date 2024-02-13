@@ -844,43 +844,13 @@ public class Needle {
         //System.out.println("Num of threads: " + omp_num_threads);
         System.out.println("Processing top-left matrix");
         long startTime = System.nanoTime();
-        //        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-        //        TaskGraph taskGraph1 = new TaskGraph("s1")
-        //                .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras)
-        //                .task("t1", Needle::nw_optimized1, input_itemsets, reference, paras)
-        //                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets);
-        //        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        //        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-        //                .withDevice(device);
-        //        TaskGraph taskGraph2 = new TaskGraph("s2")
-        //                .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras)
-        //                .task("t2", Needle::nw_optimized2, input_itemsets, reference, paras)
-        //                .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras);
-        //        ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-        //        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
-        //                .withDevice(device);
-
-        //printInput();
-        //printRef();
         nw_optimized1(input_itemsets, reference, paras);
-        //executor1.execute();
-        //printInput();
-        //printRef();
         nw_optimized2(input_itemsets, reference, paras);
-        //executor2.execute();
-        //printInput();
-        //printRef();
-
-        //nw_optimized1(input_itemsets, reference, paras);
-        //nw_optimized2(input_itemsets, reference, paras);
-
         long endTime = System.nanoTime();
         System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
 
         try {
-            PrintWriter writer = new PrintWriter("result.txt");
-            //printInput();
-            //printRef();
+            PrintWriter writer = new PrintWriter("tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/nw/result.txt");
             int i = max_rows - 2;
             int j = max_cols - 2;
             for (i = max_rows - 2, j = max_cols - 2; i >= 0 && j >= 0;) {
@@ -922,13 +892,10 @@ public class Needle {
                 if (traceback == nw) {
                     i--;
                     j--;
-                    continue;
                 } else if (traceback == w) {
                     j--;
-                    continue;
                 } else if (traceback == n) {
                     i--;
-                    continue;
                 }
             }
             writer.close();
