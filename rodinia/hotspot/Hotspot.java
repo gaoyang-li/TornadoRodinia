@@ -8,43 +8,43 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
+import uk.ac.manchester.tornado.api.types.collections.VectorFloat;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
 public class Hotspot {
 
-    public static double get_time() {
-        return (double)(System.nanoTime()) / 1000000000;
+    public static float get_time() {
+        return (float)(System.nanoTime()) / 1000000000;
     }
 
-    static VectorDouble result;
-    static VectorDouble temp;
-    static VectorDouble power;
+    static VectorFloat result;
+    static VectorFloat temp;
+    static VectorFloat power;
     static final int BLOCK_SIZE = 16;
     static final int BLOCK_SIZE_C = 16;
     static final int BLOCK_SIZE_R = 16;
     static final int STR_SIZE = 256;
 
     /* maximum power density possible (say 300W for a 10mm x 10mm chip)	*/
-    static final double MAX_PD = 3.0e6;
+    static final float MAX_PD = 3.0e6f;
     /* required precision in degrees	*/
-    static final double PRECISION = 0.001;
-    static final double SPEC_HEAT_SI = 1.75e6;
+    static final float PRECISION = 0.001f;
+    static final float SPEC_HEAT_SI = 1.75e6f;
     static final int K_SI = 100;
     /* capacitance fitting factor	*/
-    static final double FACTOR_CHIP = 0.5;
+    static final float FACTOR_CHIP = 0.5f;
     //#define NUM_THREAD 4
     /* chip parameters	*/
-    static final double t_chip = 0.0005;
-    static final double chip_height = 0.016;
-    static final double chip_width = 0.016;
+    static final float t_chip = 0.0005f;
+    static final float chip_height = 0.016f;
+    static final float chip_width = 0.016f;
 
     /* ambient temperature, assuming no package at all	*/
-    static final double amb_temp = 80.0;
+    static final float amb_temp = 80.0f;
 
-    public static void parallel(VectorDouble temp, VectorDouble power, VectorDouble result, VectorDouble delta, int num_chunk, int chunks_in_row, int chunks_in_col, int row, int col, double Cap_1, double Rx_1, double Ry_1, double Rz_1) {
+    public static void parallel(VectorFloat temp, VectorFloat power, VectorFloat result, VectorFloat delta, int num_chunk, int chunks_in_row, int chunks_in_col, int row, int col, float Cap_1, float Rx_1, float Ry_1, float Rz_1) {
         for (@Parallel int chunk = 0; chunk < num_chunk; ++chunk) {
             int r_start = BLOCK_SIZE_R * (chunk / chunks_in_col);
             int c_start = BLOCK_SIZE_C * (chunk % chunks_in_row);
@@ -76,22 +76,22 @@ public class Hotspot {
                         }
                         /* Edge 1 */
                         else if ((r == 0)) {
-                            delta.set(0, (Cap_1) * (power.get(c) + (temp.get(c + 1) + temp.get(c - 1) - 2.0 * temp.get(c)) * Rx_1 + (temp.get(col + c) - temp.get(c)) * Ry_1 + (amb_temp - temp.get(c)) * Rz_1));
+                            delta.set(0, (float) ((Cap_1) * (power.get(c) + (temp.get(c + 1) + temp.get(c - 1) - 2.0 * temp.get(c)) * Rx_1 + (temp.get(col + c) - temp.get(c)) * Ry_1 + (amb_temp - temp.get(c)) * Rz_1)));
 
                         }
                         /* Edge 2 */
                         else if ((c == col - 1)) {
-                            delta.set(0, (Cap_1) * (power.get(r * col + c) + (temp.get((r + 1) * col + c) + temp.get((r - 1) * col + c) - 2.0 * temp.get(r * col + c)) * Ry_1 + (temp.get(r * col + c - 1) - temp.get(r * col + c)) * Rx_1 + (amb_temp - temp.get(r * col + c)) * Rz_1));
+                            delta.set(0, (float) ((Cap_1) * (power.get(r * col + c) + (temp.get((r + 1) * col + c) + temp.get((r - 1) * col + c) - 2.0 * temp.get(r * col + c)) * Ry_1 + (temp.get(r * col + c - 1) - temp.get(r * col + c)) * Rx_1 + (amb_temp - temp.get(r * col + c)) * Rz_1)));
 
                         }
                         /* Edge 3 */
                         else if ((r == row - 1)) {
-                            delta.set(0, (Cap_1) * (power.get(r * col + c) + (temp.get(r * col + c + 1) + temp.get(r * col + c - 1) - 2.0 * temp.get(r * col + c)) * Rx_1 + (temp.get((r - 1) * col + c) - temp.get(r * col + c)) * Ry_1 + (amb_temp - temp.get(r * col + c)) * Rz_1));
+                            delta.set(0, (float) ((Cap_1) * (power.get(r * col + c) + (temp.get(r * col + c + 1) + temp.get(r * col + c - 1) - 2.0 * temp.get(r * col + c)) * Rx_1 + (temp.get((r - 1) * col + c) - temp.get(r * col + c)) * Ry_1 + (amb_temp - temp.get(r * col + c)) * Rz_1)));
 
                         }
                         /* Edge 4 */
                         else if ((c == 0)) {
-                            delta.set(0, (Cap_1) * (power.get(r * col) + (temp.get((r + 1) * col) + temp.get((r - 1) * col) - 2.0 * temp.get(r * col)) * Ry_1 + (temp.get(r * col + 1) - temp.get(r * col)) * Rx_1 + (amb_temp - temp.get(r * col)) * Rz_1));
+                            delta.set(0, (float) ((Cap_1) * (power.get(r * col) + (temp.get((r + 1) * col) + temp.get((r - 1) * col) - 2.0 * temp.get(r * col)) * Ry_1 + (temp.get(r * col + 1) - temp.get(r * col)) * Rx_1 + (amb_temp - temp.get(r * col)) * Rz_1)));
 
                         }
                         result.set(r * col + c, temp.get(r * col + c) + delta.get(0));
@@ -102,7 +102,7 @@ public class Hotspot {
 
             for (int r = r_start; r < r_start + BLOCK_SIZE_R; ++r) {
                 for (int c = c_start; c < c_start + BLOCK_SIZE_C; ++c) {
-                    result.set(r * col + c, temp.get(r * col + c) + (Cap_1 * (power.get(r * col + c) + (temp.get((r + 1) * col + c) + temp.get((r - 1) * col + c) - 2.0 * temp.get(r * col + c)) * Ry_1 + (temp.get(r * col + c + 1) + temp.get(r * col + c - 1) - 2.0 * temp.get(r * col + c)) * Rx_1 + (amb_temp - temp.get(r * col + c)) * Rz_1)));
+                    result.set(r * col + c, (float) (temp.get(r * col + c) + (Cap_1 * (power.get(r * col + c) + (temp.get((r + 1) * col + c) + temp.get((r - 1) * col + c) - 2.0 * temp.get(r * col + c)) * Ry_1 + (temp.get(r * col + c + 1) + temp.get(r * col + c - 1) - 2.0 * temp.get(r * col + c)) * Rx_1 + (amb_temp - temp.get(r * col + c)) * Rz_1))));
                 }
             }
         }
@@ -112,9 +112,9 @@ public class Hotspot {
      * advances the solution of the discretized difference equations
      * by one time step
      */
-    public static void single_iteration(VectorDouble result, VectorDouble temp, VectorDouble power, int row, int col, double Cap_1, double Rx_1, double Ry_1, double Rz_1, double step) {
-        VectorDouble delta = new VectorDouble(1); //double delta = 0.0;
-        delta.set(0, 0.0);
+    public static void single_iteration(VectorFloat result, VectorFloat temp, VectorFloat power, int row, int col, float Cap_1, float Rx_1, float Ry_1, float Rz_1, float step) {
+        VectorFloat delta = new VectorFloat(1); //float delta = 0.0;
+        delta.set(0, 0.0f);
         //int r, c;
         //int chunk;
         int num_chunk = row * col / (BLOCK_SIZE_R * BLOCK_SIZE_C);
@@ -130,7 +130,7 @@ public class Hotspot {
                 .withDevice(device);
         executor1.execute();
         //parallel(temp,  power, result, delta,  num_chunk,  chunks_in_row, chunks_in_col , row, col,  Cap_1,  Rx_1,  Ry_1,  Rz_1);
-        VectorDouble tmp = new VectorDouble(temp.size());
+        VectorFloat tmp = new VectorFloat(temp.size());
         for (int i = 0; i < temp.size(); i++) {
             temp.set(i, result.get(i));
         }
@@ -143,20 +143,20 @@ public class Hotspot {
      * transfer differential equations to difference equations
      * and solves the difference equations by iterating
      */
-    public static void compute_tran_temp(VectorDouble result, int num_iterations, VectorDouble temp, VectorDouble power, int row, int col) {
+    public static void compute_tran_temp(VectorFloat result, int num_iterations, VectorFloat temp, VectorFloat power, int row, int col) {
         int i = 0;
-        double grid_height = chip_height / row;
-        double grid_width = chip_width / col;
-        double Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_width * grid_height;
-        double Rx = grid_width / (2.0 * K_SI * t_chip * grid_height);
-        double Ry = grid_height / (2.0 * K_SI * t_chip * grid_width);
-        double Rz = t_chip / (K_SI * grid_height * grid_width);
-        double max_slope = MAX_PD / (FACTOR_CHIP * t_chip * SPEC_HEAT_SI);
-        double step = PRECISION / max_slope / 1000.0;
-        double Rx_1 = 1.0 / Rx;
-        double Ry_1 = 1.0 / Ry;
-        double Rz_1 = 1.0 / Rz;
-        double Cap_1 = step / Cap;
+        float grid_height = chip_height / row;
+        float grid_width = chip_width / col;
+        float Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_width * grid_height;
+        float Rx = (float) (grid_width / (2.0 * K_SI * t_chip * grid_height));
+        float Ry = (float) (grid_height / (2.0 * K_SI * t_chip * grid_width));
+        float Rz = t_chip / (K_SI * grid_height * grid_width);
+        float max_slope = MAX_PD / (FACTOR_CHIP * t_chip * SPEC_HEAT_SI);
+        float step = (float) (PRECISION / max_slope / 1000.0);
+        float Rx_1 = (float) (1.0 / Rx);
+        float Ry_1 = (float) (1.0 / Ry);
+        float Rz_1 = (float) (1.0 / Rz);
+        float Cap_1 = step / Cap;
         System.out.printf("total iterations: %d s\tstep size: %g s\n", num_iterations, step);
         System.out.printf("Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
         int array_size = row * col;
@@ -169,7 +169,7 @@ public class Hotspot {
         System.out.printf("iteration %d\n", i++);
     }
 
-    public static void writeOutput(VectorDouble vect, int grid_rows, int grid_cols, String file) {
+    public static void writeOutput(VectorFloat vect, int grid_rows, int grid_cols, String file) {
         int i, j, index = 0;
         try {
             PrintWriter writer = new PrintWriter(file);
@@ -186,7 +186,7 @@ public class Hotspot {
         }
     }
 
-    public static void readInput(VectorDouble vect, int grid_rows, int grid_cols, String file) {
+    public static void readInput(VectorFloat vect, int grid_rows, int grid_cols, String file) {
         Scanner scanner = null;
         try {
             scanner = new Scanner(new File(file));
@@ -195,7 +195,7 @@ public class Hotspot {
                     System.out.println("not enough lines in file");
                     System.exit(1);
                 } else {
-                    vect.set(i, scanner.nextDouble());
+                    vect.set(i, scanner.nextFloat());
                 }
             }
         } catch (Exception e) {
@@ -217,9 +217,9 @@ public class Hotspot {
         grid_rows = Integer.parseInt(args[0]);
         grid_cols = Integer.parseInt(args[1]);
         sim_time = Integer.parseInt(args[2]);
-        temp = new VectorDouble(grid_rows * grid_cols);
-        power = new VectorDouble(grid_rows * grid_cols);
-        result = new VectorDouble(grid_rows * grid_cols);
+        temp = new VectorFloat(grid_rows * grid_cols);
+        power = new VectorFloat(grid_rows * grid_cols);
+        result = new VectorFloat(grid_rows * grid_cols);
         tfile = args[3];
         pfile = args[4];
         ofile = args[5];
