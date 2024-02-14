@@ -15,8 +15,8 @@ import java.util.Scanner;
 
 public class Hotspot {
 
-    public static float get_time() {
-        return (float)(System.nanoTime()) / 1000000000;
+    public static double get_time() {
+        return (double) (System.nanoTime()) / 1000000000;
     }
 
     static VectorFloat result;
@@ -175,7 +175,7 @@ public class Hotspot {
             PrintWriter writer = new PrintWriter(file);
             for (i = 0; i < grid_rows; i++) {
                 for (j = 0; j < grid_cols; j++) {
-                    writer.printf("%d\t%f\n", index, vect.get(i * grid_cols + j));
+                    writer.printf("%d\t%g\n", index, vect.get(i * grid_cols + j));
                     index++;
                 }
             }
@@ -225,7 +225,11 @@ public class Hotspot {
         ofile = args[5];
         readInput(temp, grid_rows, grid_cols, tfile);
         readInput(power, grid_rows, grid_cols, pfile);
+        double start = get_time();
         compute_tran_temp(result, sim_time, temp, power, grid_rows, grid_cols);
+        double end = get_time();
+        System.out.println("Ending simulation");
+        System.out.printf("Total time: %.3f seconds\n", (end-start));
         writeOutput((1 & sim_time) == 1 ? result : temp, grid_rows, grid_cols, ofile);
     }
 
