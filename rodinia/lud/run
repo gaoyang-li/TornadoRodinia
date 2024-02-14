@@ -1,0 +1,2 @@
+i  <filename>             - name of the input file
+s  <martrix_dimension>    - randomly generated matrix with input matrix dimension; should be a multiple of 16
