@@ -9,9 +9,8 @@ import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 
-import java.io.*;
+import java.io.PrintWriter;
 import java.util.Random;
-import java.util.Arrays;
 
 public class Needle {
     final static int BLOCK_SIZE = 16;
@@ -787,8 +786,6 @@ public class Needle {
         int max_rows = 0;
         int max_cols = 0;
         int penalty = 0;
-        //int omp_num_threads = 0;
-
         // the lengths of the two sequences should be able to divided by 16.
         // And at current stage  max_rows needs to equal max_cols
         if (args.length == 2) {
@@ -841,7 +838,6 @@ public class Needle {
         }
 
         //Compute top-left matrix
-        //System.out.println("Num of threads: " + omp_num_threads);
         System.out.println("Processing top-left matrix");
         long startTime = System.nanoTime();
         nw_optimized1(input_itemsets, reference, paras);
@@ -899,7 +895,7 @@ public class Needle {
                 }
             }
             writer.close();
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             System.out.println("Error writing to result.txt");
         }
     }
