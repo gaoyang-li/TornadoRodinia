@@ -9,6 +9,8 @@
 | nw | undetermined  | undetermined | support | support | unsupport | null
 | particlefilter | same  | undetermined | support | unsupport | unsupport | null
 | pathfinder | null  | undetermined | unsupport | unsupport | unsupport | [bug](https://github.com/beehive-lab/TornadoVM/issues/331)
+| srad | undetermined  | undetermined | support | support | unsupport | null
+
 
 
 
