@@ -9,6 +9,7 @@ import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
+import uk.ac.manchester.tornado.api.types.collections.VectorFloat;
 
 public class Hotspot3D {
     static final int STR_SIZE = 256;
@@ -27,12 +28,12 @@ public class Hotspot3D {
     /* ambient temperature, assuming no package at all	*/
     static float amb_temp = 80.0f;
 
-    public static void readinput(float[] vect, int grid_rows, int grid_cols, int layers, String file) {
+    public static void readinput(VectorFloat vect, int grid_rows, int grid_cols, int layers, String file) {
         try (Scanner scanner = new Scanner(new File(file))) {
             for (int i = 0; i <= grid_rows - 1; i++) {
                 for (int j = 0; j <= grid_cols - 1; j++) {
                     for (int k = 0; k <= layers - 1; k++) {
-                        vect[i * grid_cols + j + k * grid_rows * grid_cols] = scanner.nextFloat();
+                        vect.set(i * grid_cols + j + k * grid_rows * grid_cols, scanner.nextFloat());
                     }
                 }
             }
@@ -42,13 +43,13 @@ public class Hotspot3D {
         }
     }
 
-    public static void writeoutput(float[] vect, int grid_rows, int grid_cols, int layers, String file) {
+    public static void writeoutput(VectorFloat vect, int grid_rows, int grid_cols, int layers, String file) {
         int index = 0;
         StringBuilder str = new StringBuilder();
         for (int i = 0; i < grid_rows; i++) {
             for (int j = 0; j < grid_cols; j++) {
                 for (int k = 0; k < layers; k++) {
-                    str.append(String.format("%d\t%g\n", index, vect[i * grid_cols + j + k * grid_rows * grid_cols]));
+                    str.append(String.format("%d\t%g\n", index, vect.get(i * grid_cols + j + k * grid_rows * grid_cols)));
                     index++;
                 }
             }
@@ -63,7 +64,7 @@ public class Hotspot3D {
         }
     }
 
-    public static void computeTempCPU(float[] pIn, float[] tIn, float[] tOut,
+    public static void computeTempCPU(VectorFloat pIn, VectorFloat tIn, VectorFloat tOut,
                                       int nx, int ny, int nz, float Cap,
                                       float Rx, float Ry, float Rz,
                                       float dt, int numiter) {
@@ -72,7 +73,7 @@ public class Hotspot3D {
         ce = cw = stepDivCap / Rx;
         cn = cs = stepDivCap / Ry;
         ct = cb = stepDivCap / Rz;
-        cc = (float) (1.0 - (2.0 * ce + 2.0 * cn + 3.0 * ct));
+        cc = (float)(1.0 - (2.0 * ce + 2.0 * cn + 3.0 * ct));
         int c, w, e, n, s, b, t;
         int x, y, z;
         int i = 0;
@@ -88,11 +89,11 @@ public class Hotspot3D {
                         b = (z == 0) ? c : c - nx * ny;
                         t = (z == nz - 1) ? c : c + nx * ny;
 
-                        tOut[c] = tIn[c] * cc + tIn[n] * cn + tIn[s] * cs + tIn[e] * ce + tIn[w] * cw + tIn[t] * ct + tIn[b] * cb + (dt / Cap) * pIn[c] + ct * amb_temp;
+                        tOut.set(c, tIn.get(c) * cc + tIn.get(n) * cn + tIn.get(s) * cs + tIn.get(e) * ce + tIn.get(w) * cw + tIn.get(t) * ct + tIn.get(b) * cb + (dt / Cap) * pIn.get(c) + ct * amb_temp);
                     }
                 }
             }
-            float[] temp = tIn;
+            VectorFloat temp = tIn;
             tIn = tOut;
             tOut = temp;
             i++;
@@ -100,11 +101,11 @@ public class Hotspot3D {
         while (i < numiter);
     }
 
-    public static float accuracy(float[] arr1, float[] arr2, int len) {
+    public static float accuracy(VectorFloat arr1, VectorFloat arr2, int len) {
         float err = 0.0f;
         int i;
         for (i = 0; i < len; i++) {
-            err += (arr1[i] - arr2[i]) * (arr1[i] - arr2[i]);
+            err += (arr1.get(i) - arr2.get(i)) * (arr1.get(i) - arr2.get(i));
         }
         return (float) Math.sqrt(err / len);
     }
@@ -112,7 +113,7 @@ public class Hotspot3D {
     public static void parallel(int nx, int ny, int nz,
                                 float cc, float cw, float ce, float cs, float cb, float ct, float cn,
                                 float dt, float Cap,
-                                float[] tOut_t, float[] tIn_t, float[] pIn){
+                                VectorFloat tOut_t, VectorFloat tIn_t, VectorFloat pIn) {
         for (int z = 0; z < nz; z++) {
             for (int y = 0; y < ny; y++) {
                 int x;
@@ -125,32 +126,29 @@ public class Hotspot3D {
                     s = (y == ny - 1) ? c : c + nx;
                     b = (z == 0) ? c : c - nx * ny;
                     t = (z == nz - 1) ? c : c + nx * ny;
-                    tOut_t[c] = cc * tIn_t[c] + cw * tIn_t[w] + ce * tIn_t[e] +
-                            cs * tIn_t[s] + cn * tIn_t[n] + cb * tIn_t[b] + ct * tIn_t[t] + (dt / Cap) * pIn[c] + ct * amb_temp;
+                    tOut_t.set(c, cc * tIn_t.get(c) + cw * tIn_t.get(w) + ce * tIn_t.get(e) +
+                            cs * tIn_t.get(s) + cn * tIn_t.get(n) + cb * tIn_t.get(b) + ct * tIn_t.get(t) + (dt / Cap) * pIn.get(c) + ct * amb_temp);
                 }
             }
         }
     }
 
-    public static void computeTempTornado(float[] pIn, float[] tIn, float[] tOut,
-                                      int nx, int ny, int nz, float Cap,
-                                      float Rx, float Ry, float Rz,
-                                      float dt, int numiter) {
+    public static void computeTempTornado(VectorFloat pIn, VectorFloat tIn, VectorFloat tOut,
+                                          int nx, int ny, int nz, float Cap,
+                                          float Rx, float Ry, float Rz,
+                                          float dt, int numiter) {
 
         float ce, cw, cn, cs, ct, cb, cc;
-
         float stepDivCap = dt / Cap;
         ce = cw = stepDivCap / Rx;
         cn = cs = stepDivCap / Ry;
         ct = cb = stepDivCap / Rz;
-
-        cc = (float) (1.0 - (2.0 * ce + 2.0 * cn + 3.0 * ct));
+        cc = (float)(1.0 - (2.0 * ce + 2.0 * cn + 3.0 * ct));
 
         {
             int count = 0;
-            float[] tIn_t = tIn;
-            float[] tOut_t = tOut;
-
+            VectorFloat tIn_t = tIn;
+            VectorFloat tOut_t = tOut;
             do {
                 TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
                 TaskGraph taskGraph1 = new TaskGraph("s1")
@@ -162,7 +160,7 @@ public class Hotspot3D {
                         .withDevice(device);
                 executor1.execute();
                 //parallel(nx, ny, nz, cc, cw, ce, cs, cb, ct, cn, dt, Cap, tOut_t, tIn_t, pIn);
-                float[] t = tIn_t;
+                VectorFloat t = tIn_t;
                 tIn_t = tOut_t;
                 tOut_t = t;
                 count++;
@@ -203,36 +201,33 @@ public class Hotspot3D {
         float dz = t_chip / layers;
 
         float Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * dx * dy;
-        float Rx = (float) (dy / (2.0 * K_SI * t_chip * dx));
-        float Ry = (float) (dx / (2.0 * K_SI * t_chip * dy));
+        float Rx = (float)(dy / (2.0 * K_SI * t_chip * dx));
+        float Ry = (float)(dx / (2.0 * K_SI * t_chip * dy));
         float Rz = dz / (K_SI * dx * dy);
 
         // cout << Rx << " " << Ry << " " << Rz << endl;
         float max_slope = MAX_PD / (FACTOR_CHIP * t_chip * SPEC_HEAT_SI);
         float dt = PRECISION / max_slope;
 
-        float[] powerIn, tempOut, tempIn, tempCopy; // *pCopy;
+        VectorFloat powerIn, tempOut, tempIn, tempCopy; // *pCopy;
         //    float *d_powerIn, *d_tempIn, *d_tempOut;
         int size = numCols * numRows * layers;
 
-        powerIn = new float[size];
-        tempCopy = new float[size];
-        tempIn = new float[size];
-        tempOut = new float[size];
-        //pCopy = (float*)calloc(size,sizeof(float));
-        float[] answer = new float[size];
+        powerIn = new VectorFloat(size);
+        tempCopy = new VectorFloat(size);
+        tempIn = new VectorFloat(size);
+        tempOut = new VectorFloat(size);
+        VectorFloat answer = new VectorFloat(size);
 
-        // outCopy = (float*)calloc(size, sizeof(float));
         readinput(powerIn, numRows, numCols, layers, pfile);
         readinput(tempIn, numRows, numCols, layers, tfile);
 
-        System.arraycopy(tempIn, 0, tempCopy, 0, size);
+        tempCopy = tempIn.duplicate();
 
-        //struct timeval start, stop;
         long startTime = System.nanoTime();
         computeTempTornado(powerIn, tempIn, tempOut, numCols, numRows, layers, Cap, Rx, Ry, Rz, dt, iterations);
         long endTime = System.nanoTime();
-        double exeTime = (double) (endTime - startTime) /1000000000;
+        double exeTime = (double)(endTime - startTime) / 1000000000;
         computeTempCPU(powerIn, tempCopy, answer, numCols, numRows, layers, Cap, Rx, Ry, Rz, dt, iterations);
 
         float acc = accuracy(tempOut, answer, numRows * numCols * layers);
