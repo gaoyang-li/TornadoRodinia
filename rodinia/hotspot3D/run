@@ -1,0 +1,6 @@
+<rows/cols>    - number of rows/cols in the grid (positive integer)
+<layers>       - number of layers in the grid (positive integer)
+<iteration>    - number of iterations
+<powerFile>    - name of the file containing the initial power values of each cell
+<tempFile>     - name of the file containing the initial temperature values of each cell
+<outputFile>   - output file
