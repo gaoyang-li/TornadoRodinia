@@ -14,7 +14,6 @@ import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
 import uk.ac.manchester.tornado.api.types.vectors.Int4;
 
-
 import static java.lang.Math.*;
 
 public class Particlefilter {
@@ -379,7 +378,7 @@ public class Particlefilter {
                 int powResult2 = I.get(ind.get(x * (objxy.size() / 2) + y)) - 228;
                 likelihood.set(x, likelihood.get(x) + ((powResult1 * powResult1 - powResult2 * powResult2) / 50.0));
             }
-            likelihood.set(x, likelihood.get(x) / ((double) (objxy.size() / 2)));
+            likelihood.set(x, likelihood.get(x) / ((double)(objxy.size() / 2)));
         }
     }
 
@@ -391,7 +390,7 @@ public class Particlefilter {
 
     public static void computeSumWeights(DoubleArray weights, @Reduce DoubleArray sumWeights) {
         for (@Parallel int x = 0; x < weights.getSize(); x++) {
-            sumWeights.set(0, sumWeights.get(0) + weights.get(x));//sumWeights = sumWeights + weights.get(x);
+            sumWeights.set(0, sumWeights.get(0) + weights.get(x)); //sumWeights = sumWeights + weights.get(x);
         }
     }
 
@@ -466,7 +465,7 @@ public class Particlefilter {
         int x, y;
         for (x = 0; x < diameter; x++) {
             for (y = 0; y < diameter; y++) {
-                if (disk.get(x * diameter + y) == 1){
+                if (disk.get(x * diameter + y) == 1) {
                     countOnes++;
                 }
             }
@@ -646,7 +645,6 @@ public class Particlefilter {
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
             long u_time = get_time();
             System.out.printf("TIME TO CALC U TOOK: %f\n", elapsed_time(cum_sum, u_time - (taskEndTime - taskStartTime)));
-            int j, i;
 
             taskStartTime = get_time();
             TaskGraph taskGraph8 = new TaskGraph("s8")
@@ -721,7 +719,7 @@ public class Particlefilter {
         VectorInt seed = new VectorInt(Nparticles);
         int i;
         Random random = new Random();
-        for(i = 0; i < Nparticles; i++) {
+        for (i = 0; i < Nparticles; i++) {
             seed.set(i, random.nextInt() * i);
         }
         //malloc matrix
