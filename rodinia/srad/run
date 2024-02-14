@@ -1,0 +1,8 @@
+<rows>          - number of rows
+<cols>          - number of cols
+<y1>            - y1 value of the speckle
+<y2>            - y2 value of the speckle
+<x1>            - x1 value of the speckle
+<x2>            - x2 value of the speckle
+<lamda>         - lambda (0,1)
+<no. of iter>   - number of iterations

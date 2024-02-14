@@ -7,7 +7,7 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
+import uk.ac.manchester.tornado.api.types.collections.VectorFloat;
 import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 
 
@@ -15,9 +15,9 @@ import java.util.Random;
 
 public class Srad {
     static int size_I, size_R, iter, k, nthreads, r1 = 0, r2 = 0, c1 = 0, c2 = 0, rows = 0, cols = 0, niter = 10;
-    static double sum, sum2, tmp, meanROI, varROI, Jc, G2, L, num, den, qsqr, cN, cS, cW, cE, D, lambda = 0, q0sqr = 0;
+    static float sum, sum2, tmp, meanROI, varROI, Jc, G2, L, num, den, qsqr, cN, cS, cW, cE, D, lambda = 0, q0sqr = 0;
     static VectorInt iN, iS, jE, jW;
-    static VectorDouble I, J, dN, dS, dW, dE, c;
+    static VectorFloat I, J, dN, dS, dW, dE, c;
     static boolean printFlag = true;
 
     public static void usage(String[] args) {
@@ -28,40 +28,40 @@ public class Srad {
         System.out.print("\t<y2>      - y2 value of the speckle\n");
         System.out.print("\t<x1>       - x1 value of the speckle\n");
         System.out.print("\t<x2>       - x2 value of the speckle\n");
-        System.out.print("\t<no. of threads>  - no. of threads\n");
+//        System.out.print("\t<no. of threads>  - no. of threads\n");
         System.out.print("\t<lamda>   - lambda (0,1)\n");
         System.out.print("\t<no. of iter>   - number of iterations\n");
         System.exit(1);
     }
 
-    public static void random_matrix(VectorDouble I, int rows, int cols) {
+    public static void random_matrix(VectorFloat I, int rows, int cols) {
         Random random = new Random(7);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                I.set(i * cols + j, random.nextDouble());
+                I.set(i * cols + j, random.nextFloat());
             }
         }
     }
 
-    public static void parallel1(VectorInt intParas, VectorDouble doubleParas, VectorDouble J, VectorDouble dN, VectorDouble dS, VectorDouble dW, VectorDouble dE, VectorInt iN, VectorInt iS, VectorInt jW, VectorInt jE, VectorDouble c) {
+    public static void parallel1(VectorInt intParas, VectorFloat doubleParas, VectorFloat J, VectorFloat dN, VectorFloat dS, VectorFloat dW, VectorFloat dE, VectorInt iN, VectorInt iS, VectorInt jW, VectorInt jE, VectorFloat c) {
         for (@Parallel int i = 0; i < intParas.get(0); i++) {
             for (int j = 0; j < intParas.get(1); j++) {
                 int k = i * intParas.get(1) + j;
-                double Jc = J.get(k);
+                float Jc = J.get(k);
                 // directional derivatives
                 dN.set(k, J.get(iN.get(i) * intParas.get(1) + j) - Jc);
                 dS.set(k, J.get(iS.get(i) * intParas.get(1) + j) - Jc);
                 dW.set(k, J.get(i * intParas.get(1) + jW.get(j)) - Jc);
                 dE.set(k, J.get(i * intParas.get(1) + jE.get(j)) - Jc);
-                double G2 = (dN.get(k) * dN.get(k) + dS.get(k) * dS.get(k) +
+                float G2 = (dN.get(k) * dN.get(k) + dS.get(k) * dS.get(k) +
                         dW.get(k) * dW.get(k) + dE.get(k) * dE.get(k)) / (Jc * Jc);
-                double L = (dN.get(k) + dS.get(k) + dW.get(k) + dE.get(k)) / Jc;
-                double num = (0.5 * G2) - ((1.0 / 16.0) * (L * L));
-                double den = 1 + (.25 * L);
-                double qsqr = num / (den * den);
+                float L = (dN.get(k) + dS.get(k) + dW.get(k) + dE.get(k)) / Jc;
+                float num = (float) ((0.5 * G2) - ((1.0 / 16.0) * (L * L)));
+                float den = (float) (1 + (.25 * L));
+                float qsqr = num / (den * den);
                 // diffusion coefficient (equ 33)
                 den = (qsqr - doubleParas.get(1)) / (doubleParas.get(1) * (1 + doubleParas.get(1)));
-                c.set(k, 1.0 / (1.0 + den));
+                c.set(k, (float) (1.0 / (1.0 + den)));
                 // saturate diffusion coefficient
                 if (c.get(k) < 0) {
                     c.set(k, 0);
@@ -72,20 +72,20 @@ public class Srad {
         }
     }
 
-    public static void parallel2(VectorInt intParas, VectorDouble doubleParas, VectorDouble c, VectorInt iS, VectorDouble dN, VectorDouble dS, VectorDouble dW, VectorDouble dE, VectorInt jE, VectorDouble J) {
+    public static void parallel2(VectorInt intParas, VectorFloat doubleParas, VectorFloat c, VectorInt iS, VectorFloat dN, VectorFloat dS, VectorFloat dW, VectorFloat dE, VectorInt jE, VectorFloat J) {
         for (@Parallel int i = 0; i < intParas.get(0); i++) {
             for (int j = 0; j < intParas.get(1); j++) {
                 // current index
                 int k = i * intParas.get(1) + j;
                 // diffusion coefficient
-                double cN = c.get(k);
-                double cS = c.get(iS.get(i) * intParas.get(1) + j);
-                double cW = c.get(k);
-                double cE = c.get(i * intParas.get(1) + jE.get(j));
+                float cN = c.get(k);
+                float cS = c.get(iS.get(i) * intParas.get(1) + j);
+                float cW = c.get(k);
+                float cE = c.get(i * intParas.get(1) + jE.get(j));
                 // divergence (equ 58)
-                double D = cN * dN.get(k) + cS * dS.get(k) + cW * dW.get(k) + cE * dE.get(k);
+                float D = cN * dN.get(k) + cS * dS.get(k) + cW * dW.get(k) + cE * dE.get(k);
                 // image update (equ 61)
-                J.set(k, J.get(k) + 0.25 * doubleParas.get(0) * D);
+                J.set(k, (float) (J.get(k) + 0.25 * doubleParas.get(0) * D));
             }
         }
     }
@@ -93,8 +93,8 @@ public class Srad {
 
     public static void main(String[] args) {
         VectorInt intParas = new VectorInt(2);            // rows&cols
-        VectorDouble doubleParas = new VectorDouble(2);   // lambda&q0sqr
-        if (args.length == 9) {
+        VectorFloat doubleParas = new VectorFloat(2);   // lambda&q0sqr
+        if (args.length == 8) {
             rows = Integer.parseInt(args[0]); //number of rows in the domain
             cols = Integer.parseInt(args[1]); //number of cols in the domain
             if ((rows % 16 != 0) || (cols % 16 != 0)) {
@@ -105,9 +105,9 @@ public class Srad {
             r2 = Integer.parseInt(args[3]); //y2 position of the speckle
             c1 = Integer.parseInt(args[4]); //x1 position of the speckle
             c2 = Integer.parseInt(args[5]); //x2 position of the speckle
-            nthreads = Integer.parseInt(args[6]); // number of threads
-            lambda = Double.parseDouble(args[7]); //Lambda value
-            niter = Integer.parseInt(args[8]); //number of iterations
+            //nthreads = Integer.parseInt(args[6]); // number of threads
+            lambda = Float.parseFloat(args[6]); //Lambda value
+            niter = Integer.parseInt(args[7]); //number of iterations
             intParas.set(0, rows);
             intParas.set(1, cols);
         } else {
@@ -117,19 +117,19 @@ public class Srad {
         size_I = cols * rows;
         size_R = (r2 - r1 + 1) * (c2 - c1 + 1);
 
-        I = new VectorDouble(size_I);
-        J = new VectorDouble(size_I);
-        c = new VectorDouble(size_I);
+        I = new VectorFloat(size_I);
+        J = new VectorFloat(size_I);
+        c = new VectorFloat(size_I);
 
         iN = new VectorInt(rows);
         iS = new VectorInt(rows);
         jW = new VectorInt(cols);
         jE = new VectorInt(cols);
 
-        dN = new VectorDouble(size_I);
-        dS = new VectorDouble(size_I);
-        dW = new VectorDouble(size_I);
-        dE = new VectorDouble(size_I);
+        dN = new VectorFloat(size_I);
+        dS = new VectorFloat(size_I);
+        dW = new VectorFloat(size_I);
+        dE = new VectorFloat(size_I);
 
         for (int i = 0; i < rows; i++) {
             iN.set(i, i - 1);
@@ -149,7 +149,7 @@ public class Srad {
         random_matrix(I, rows, cols);
 
         for (k = 0; k < size_I; k++) {
-            J.set(k, (double) Math.exp(I.get(k)));
+            J.set(k, (float) Math.exp(I.get(k)));
         }
 
         System.out.print("Start the SRAD main loop\n");
