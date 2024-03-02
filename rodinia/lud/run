@@ -1,2 +1,6 @@
 i  <filename>             - name of the input file
 s  <martrix_dimension>    - randomly generated matrix with input matrix dimension; should be a multiple of 16
+
+Example:
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.lud.Lud  i  tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/data/lud/64.dat
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.lud.Lud  s  16
