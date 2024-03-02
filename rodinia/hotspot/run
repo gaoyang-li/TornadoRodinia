@@ -4,3 +4,6 @@
 <temp_file>  		- name of the file containing the initial temperature values of each cell
 <power_file> 		- name of the file containing the dissipated power values of each cell
 <out_file> 		    - name of the output file
+
+example:
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.hotspot.Hotspot 64 64 4 tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/data/hotspot/temp_64 tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/data/hotspot/power_64 tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/hotspot/out_64
