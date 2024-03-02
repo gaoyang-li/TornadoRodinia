@@ -6,3 +6,6 @@
 <x2>            - x2 value of the speckle
 <lamda>         - lambda (0,1)
 <no. of iter>   - number of iterations
+
+Example:
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.srad.Srad 128 128 0 31 0 31 0.5 2
