@@ -1,1 +1,4 @@
 x 128 y 128 z 10 np 10000
+
+Example:
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.particlefilter.Particlefilter x 128 y 128 z 10 np 10000
