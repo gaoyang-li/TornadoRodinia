@@ -1,1 +1,4 @@
 <input_file>: name of the file
+
+example:
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.bfs.Bfs tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/data/bfs/graph4096.txt
