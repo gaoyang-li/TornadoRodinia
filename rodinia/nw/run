@@ -1,2 +1,5 @@
 <dimension>      - x and y dimensions
 <penalty>        - penalty(positive integer)
+
+Example:
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.nw.Needle 2048 10
