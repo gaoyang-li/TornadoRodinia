@@ -1,0 +1,4 @@
+<wdith>
+<number_of_steps>
+
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.pathfinder.Pathfinder 10000 100
