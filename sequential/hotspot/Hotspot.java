@@ -146,7 +146,7 @@ public class Hotspot {
             PrintWriter writer = new PrintWriter(file);
             for (i = 0; i < grid_rows; i++) {
                 for (j=0; j<grid_cols; j++){
-                    writer.printf("%d\t%f\n", index, vect[i*grid_cols+j]);
+                    writer.printf("%d\t%g\n", index, vect[i*grid_cols+j]);
                     index++;
                 }
             }
