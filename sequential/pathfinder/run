@@ -1,0 +1,3 @@
+javac Pathfinder.java
+
+java Pathfinder width num_of_steps > out
