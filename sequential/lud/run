@@ -1,0 +1,3 @@
+javac Lud.java
+
+java Lud [s matrix_size|i input_file]
