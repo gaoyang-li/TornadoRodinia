@@ -1,0 +1,8 @@
+<rows/cols>    - number of rows/cols in the grid (positive integer)
+<layers>       - number of layers in the grid (positive integer)
+<iteration>    - number of iterations
+<powerFile>    - name of the file containing the initial power values of each cell
+<tempFile>     - name of the file containing the initial temperature values of each cell
+<outputFile>   - output file
+
+tornado  -m tornado.examples/uk.ac.manchester.tornado.examples.rodinia.hotspot3D.Hotspot3D 64 8 100 tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/data/hotspot3D/power_64x8 tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/data/hotspot3D/temp_64x8 tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/hotspot3D/out_64x8
