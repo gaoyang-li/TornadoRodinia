@@ -1,0 +1,3 @@
+javac Srad.java
+
+java Srad <rows> <cols> <y1> <y2> <x1> <x2> <lamda> <no. of iter>
