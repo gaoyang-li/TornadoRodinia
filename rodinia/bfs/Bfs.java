@@ -115,16 +115,16 @@ public class Bfs {
                 .task("t1", Bfs::initMask, h_graph_nodes_starting, h_graph_nodes_edges, h_graph_mask, h_graph_visited, h_graph_edges, h_cost, h_updating_graph_mask)
                 .transferToHost(DataTransferMode.FIRST_EXECUTION, h_graph_mask, h_cost, h_updating_graph_mask);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
 
         TaskGraph taskGraph2 = new TaskGraph("s2")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, h_updating_graph_mask, stop)
                 .task("t2", Bfs::updateMask, h_updating_graph_mask, h_graph_mask, h_graph_visited, stop)
                 .transferToHost(DataTransferMode.FIRST_EXECUTION, h_updating_graph_mask, h_graph_mask, h_graph_visited, stop);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
-                .withDevice(device);
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2);
+//                .withDevice(device);
 
         long startTime = System.nanoTime();
         do {
