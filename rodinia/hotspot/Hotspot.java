@@ -1,4 +1,5 @@
 // make ptx
+// small precision diff from the sequential
 package uk.ac.manchester.tornado.examples.rodinia.hotspot;
 
 import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
@@ -115,8 +116,6 @@ public class Hotspot {
     public static void single_iteration(VectorFloat result, VectorFloat temp, VectorFloat power, int row, int col, float Cap_1, float Rx_1, float Ry_1, float Rz_1, float step) {
         VectorFloat delta = new VectorFloat(1); //float delta = 0.0;
         delta.set(0, 0.0f);
-        //int r, c;
-        //int chunk;
         int num_chunk = row * col / (BLOCK_SIZE_R * BLOCK_SIZE_C);
         int chunks_in_row = col / BLOCK_SIZE_C;
         int chunks_in_col = row / BLOCK_SIZE_R;
@@ -126,10 +125,9 @@ public class Hotspot {
                 .task("t1", Hotspot::parallel, temp, power, result, delta, num_chunk, chunks_in_row, chunks_in_col, row, col, Cap_1, Rx_1, Ry_1, Rz_1)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, temp, result);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
         executor1.execute();
-        //parallel(temp,  power, result, delta,  num_chunk,  chunks_in_row, chunks_in_col , row, col,  Cap_1,  Rx_1,  Ry_1,  Rz_1);
         VectorFloat tmp = new VectorFloat(temp.size());
         for (int i = 0; i < temp.size(); i++) {
             temp.set(i, result.get(i));
