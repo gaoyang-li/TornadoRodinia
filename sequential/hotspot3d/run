@@ -1,0 +1,3 @@
+javac Hotspot3D.java
+
+java Hotspot3D <rows/cols> <layers> <iterations> <powerFile> <tempFile> <outputFile>
