@@ -236,7 +236,7 @@ public class Kmeans {
         for (int i = 0; i < nclusters; i++) {
             System.out.printf("%d: ", i);
             for (int j = 0; j < numAttributes; j++)
-                System.out.printf("%f ", cluster_centres[i][j]);
+                System.out.printf("%g ", cluster_centres[i][j]);
             System.out.printf("\n\n");
         }
 
