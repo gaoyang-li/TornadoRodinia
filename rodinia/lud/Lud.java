@@ -6,6 +6,7 @@ import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
+import uk.ac.manchester.tornado.api.math.TornadoMath;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 import uk.ac.manchester.tornado.api.types.arrays.DoubleArray;
 import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
@@ -25,7 +26,7 @@ public class Lud {
                     a.set(offset * size + i * size + j + offset, a.get(offset * size + i * size + j + offset) - a.get(offset * size + i * size + k + offset) * a.get(offset * size + k * size + j + offset));
                 }
             }
-            double temp = 1 / a.get(offset * size + i * size + i + offset);
+            float temp = (float) (1 / a.get(offset * size + i * size + i + offset));
             for (j = i + 1; j < 16; j++) {
                 for (k = 0; k < i; k++) {
                     a.set(offset * size + j * size + i + offset, a.get(offset * size + j * size + i + offset) - a.get(offset * size + j * size + k + offset) * a.get(offset * size + k * size + i + offset));
@@ -50,7 +51,7 @@ public class Lud {
             // calculate perimeter block matrices
             for (@Parallel int chunk_idx = 0; chunk_idx < chunks_in_inter_row; chunk_idx++) {
                 int i, j, k, i_global, j_global, i_here, j_here;
-                double sum;
+                float sum;
                 VectorDouble temp = new VectorDouble(16 * 16);
                 for (i = 0; i < 16; i++) {
                     for (j = 0; j < 16; j++) {
@@ -132,15 +133,15 @@ public class Lud {
         VectorDouble tmp = new VectorDouble(matrix_dim * matrix_dim);
         for (int i = 0; i < matrix_dim; i++) {
             for (int j = 0; j < matrix_dim; j++) {
-                double sum = 0;
-                double l, u;
-                for (int k = 0; k <= Math.min(i, j); k++) {
+                float sum = 0;
+                float l, u;
+                for (int k = 0; k <= TornadoMath.min(i, j); k++) {
                     if (i == k) {
                         l = 1;
                     } else {
-                        l = lu.get(i * matrix_dim + k);
+                        l = (float) lu.get(i * matrix_dim + k);
                     }
-                    u = lu.get(k * matrix_dim + j);
+                    u = (float) lu.get(k * matrix_dim + j);
                     sum += l * u;
                 }
                 tmp.set(i * matrix_dim + j, sum);
@@ -148,7 +149,7 @@ public class Lud {
         }
         for (int i = 0; i < matrix_dim; i++) {
             for (int j = 0; j < matrix_dim; j++) {
-                if (Math.abs(m.get(i * matrix_dim + j) - tmp.get(i * matrix_dim + j)) > 0.0001) {
+                if (TornadoMath.abs(m.get(i * matrix_dim + j) - tmp.get(i * matrix_dim + j)) > 0.0001) {
                     System.out.printf("dismatch at (%d, %d): (o)%f (n)%f\n", i, j, m.get(i * matrix_dim + j), tmp.get(i * matrix_dim + j));
                 }
             }
@@ -156,12 +157,12 @@ public class Lud {
     }
 
     public static void create_matrix(DoubleArray mp, int size) {
-        double lambda = -0.001;
+        float lambda = -0.001f;
         VectorDouble coe = new VectorDouble(2 * size - 1);
-        double coe_i = 0.0;
+        float coe_i = 0.0f;
 
         for (int i = 0; i < size; i++) {
-            coe_i = 10 * Math.exp(lambda * i);
+            coe_i = (float) (10 * TornadoMath.exp(lambda * i));
             int j = size - 1 + i;
             coe.set(j, coe_i);
             j = size - 1 - i;
@@ -251,12 +252,12 @@ public class Lud {
                 .task("t1", Lud::lud, m, matrix_dim)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, m);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
         executor1.execute();
         //lud(m, matrix_dim);
         long endTime = System.nanoTime();
-        System.out.println("Time consumed(s): " + (double)(endTime - startTime) / 1000000000);
+        System.out.println("Time consumed(s): " + (float)(endTime - startTime) / 1000000000);
 
         if (do_verify == 1) {
             System.out.println("After LUD");
