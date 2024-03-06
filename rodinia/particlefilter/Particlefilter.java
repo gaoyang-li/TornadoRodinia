@@ -8,16 +8,17 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.annotations.Reduce;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
+import uk.ac.manchester.tornado.api.math.TornadoMath;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 import uk.ac.manchester.tornado.api.types.arrays.DoubleArray;
 import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
 import uk.ac.manchester.tornado.api.types.vectors.Int4;
 
-import static java.lang.Math.*;
+//import static java.lang.TornadoMath.*;
 
 public class Particlefilter {
-    static final double PI = Math.PI;
+    static final double PI = TornadoMath.PI();
     // M value for Linear Congruential Generator (LCG); use GCC's value
     static long M = Integer.MAX_VALUE;
     // A value for LCG
@@ -77,7 +78,7 @@ public class Particlefilter {
     public static double randu(VectorInt seed, int index) {
         int num = A * seed.get(index) + C;
         seed.set(index, (int)(num % M));
-        return Math.abs(seed.get(index) / ((double) M));
+        return TornadoMath.abs(seed.get(index) / ((double) M));
     }
 
     /*
@@ -90,9 +91,9 @@ public class Particlefilter {
         /*Box-Muller algorithm*/
         double u = randu(seed, index);
         double v = randu(seed, index);
-        double cosine = cos(2 * PI * v);
-        double rt = -2 * log(u);
-        return sqrt(rt) * cosine;
+        double cosine = TornadoMath.cos(2 * PI * v);
+        double rt = -2 * TornadoMath.log(u);
+        return TornadoMath.sqrt(rt) * cosine;
     }
 
     /*
@@ -124,7 +125,7 @@ public class Particlefilter {
         int x, y;
         for (x = 0; x < diameter; x++) {
             for (y = 0; y < diameter; y++) {
-                double distance = sqrt(pow((double)(x - radius + 1), 2) + pow((double)(y - radius + 1), 2));
+                double distance = TornadoMath.sqrt(TornadoMath.pow((double)(x - radius + 1), 2) + TornadoMath.pow((double)(y - radius + 1), 2));
                 if (distance < radius)
                     disk.set(x * diameter + y, 1);
             }
@@ -158,7 +159,7 @@ public class Particlefilter {
         int x, y;
         for (x = startX; x < endX; x++) {
             for (y = startY; y < endY; y++) {
-                double distance = sqrt(pow((double)(x - posX), 2) + pow((double)(y - posY), 2));
+                double distance = TornadoMath.sqrt(TornadoMath.pow((double)(x - posX), 2) + TornadoMath.pow((double)(y - posY), 2));
                 if (distance < error)
                     matrix.set(x * dimY * dimZ + y * dimZ + posZ, 1);
             }
@@ -233,8 +234,8 @@ public class Particlefilter {
         /*move point*/
         int xk, yk, pos;
         for (k = 1; k < Nfr; k++) {
-            xk = abs(x0 + (k - 1));
-            yk = abs(y0 - 2 * (k - 1));
+            xk = TornadoMath.abs(x0 + (k - 1));
+            yk = TornadoMath.abs(y0 - 2 * (k - 1));
             pos = yk * IszY * Nfr + xk * Nfr + k;
             if (pos >= max_size)
                 pos = 0;
@@ -271,7 +272,7 @@ public class Particlefilter {
         double likelihoodSum = 0.0;
         int y;
         for (y = 0; y < numOnes; y++)
-            likelihoodSum += (pow((I.get(ind.get(y)) - 100), 2) - pow((I.get(ind.get(y)) - 228), 2)) / 50.0;
+            likelihoodSum += (TornadoMath.pow((I.get(ind.get(y)) - 100), 2) - TornadoMath.pow((I.get(ind.get(y)) - 228), 2)) / 50.0;
         return likelihoodSum;
     }
 
@@ -384,7 +385,7 @@ public class Particlefilter {
 
     public static void updateWeights(DoubleArray weights, VectorDouble likelihood) {
         for (@Parallel int x = 0; x < weights.getSize(); x++) {
-            weights.set(x, weights.get(x) * exp(likelihood.get(x)));
+            weights.set(x, weights.get(x) * TornadoMath.exp(likelihood.get(x)));
         }
     }
 
@@ -485,8 +486,8 @@ public class Particlefilter {
                 .task("t1", Particlefilter::setWeights, weights)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
         taskEndTime = get_time();
         executor1.execute();
 
@@ -509,8 +510,8 @@ public class Particlefilter {
                 .task("t2", Particlefilter::setArrayXY, arrayX, arrayY, xe, ye)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
-                .withDevice(device);
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2);
+//                .withDevice(device);
         taskEndTime = get_time();
         executor2.execute();
 
@@ -529,8 +530,8 @@ public class Particlefilter {
                     .task("t3", Particlefilter::updateArrayXY, arrayX, arrayY, seed)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
             ImmutableTaskGraph immutableTaskGraph3 = taskGraph3.snapshot();
-            TornadoExecutionPlan executor3 = new TornadoExecutionPlan(immutableTaskGraph3)
-                    .withDevice(device);
+            TornadoExecutionPlan executor3 = new TornadoExecutionPlan(immutableTaskGraph3);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor3.execute();
 
@@ -544,8 +545,8 @@ public class Particlefilter {
                     .task("t11", Particlefilter::computeLikelihood, arrayX, arrayY, objxy, ind, likelihood, paras, I)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, ind, likelihood);
             ImmutableTaskGraph immutableTaskGraph11 = taskGraph11.snapshot();
-            TornadoExecutionPlan executor11 = new TornadoExecutionPlan(immutableTaskGraph11)
-                    .withDevice(device);
+            TornadoExecutionPlan executor11 = new TornadoExecutionPlan(immutableTaskGraph11);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor11.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
@@ -562,8 +563,8 @@ public class Particlefilter {
                     .task("t4", Particlefilter::updateWeights, weights, likelihood)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
             ImmutableTaskGraph immutableTaskGraph4 = taskGraph4.snapshot();
-            TornadoExecutionPlan executor4 = new TornadoExecutionPlan(immutableTaskGraph4)
-                    .withDevice(device);
+            TornadoExecutionPlan executor4 = new TornadoExecutionPlan(immutableTaskGraph4);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor4.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
@@ -578,8 +579,8 @@ public class Particlefilter {
                     .task("t5", Particlefilter::computeSumWeights, weights, sumWeights)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, sumWeights);
             ImmutableTaskGraph immutableTaskGraph5 = taskGraph5.snapshot();
-            TornadoExecutionPlan executor5 = new TornadoExecutionPlan(immutableTaskGraph5)
-                    .withDevice(device);
+            TornadoExecutionPlan executor5 = new TornadoExecutionPlan(immutableTaskGraph5);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor5.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
@@ -592,8 +593,8 @@ public class Particlefilter {
                     .task("t6", Particlefilter::normaliseWeights, weights, sumWeights)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
             ImmutableTaskGraph immutableTaskGraph6 = taskGraph6.snapshot();
-            TornadoExecutionPlan executor6 = new TornadoExecutionPlan(immutableTaskGraph6)
-                    .withDevice(device);
+            TornadoExecutionPlan executor6 = new TornadoExecutionPlan(immutableTaskGraph6);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor6.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
@@ -610,8 +611,8 @@ public class Particlefilter {
                     .task("t10_", Particlefilter::moveObjectYe, arrayY, weights, ye)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xe, ye);
             ImmutableTaskGraph immutableTaskGraph10 = taskGraph10.snapshot();
-            TornadoExecutionPlan executor10 = new TornadoExecutionPlan(immutableTaskGraph10)
-                    .withDevice(device);
+            TornadoExecutionPlan executor10 = new TornadoExecutionPlan(immutableTaskGraph10);
+//                    .withDevice(device);
             executor10.execute();
             taskEndTime = get_time();
 
@@ -620,7 +621,7 @@ public class Particlefilter {
             System.out.printf("TIME TO MOVE OBJECT TOOK: %f\n", elapsed_time(normalize, move_time - (taskEndTime - taskStartTime)));
             System.out.printf("XE: %f\n", xe.get(0));
             System.out.printf("YE: %f\n", ye.get(0));
-            double distance = sqrt(pow((double)(xe.get(0) - (int) roundDouble(IszY / 2.0)), 2) + pow((double)(ye.get(0) - (int) roundDouble(IszX / 2.0)), 2));
+            double distance = TornadoMath.sqrt(TornadoMath.pow((double)(xe.get(0) - (int) roundDouble(IszY / 2.0)), 2) + TornadoMath.pow((double)(ye.get(0) - (int) roundDouble(IszX / 2.0)), 2));
             System.out.printf("%f\n", distance);
 
             CDF.set(0, weights.get(0));
@@ -638,8 +639,8 @@ public class Particlefilter {
                     .task("t7", Particlefilter::findU, u, u1)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, u);
             ImmutableTaskGraph immutableTaskGraph7 = taskGraph7.snapshot();
-            TornadoExecutionPlan executor7 = new TornadoExecutionPlan(immutableTaskGraph7)
-                    .withDevice(device);
+            TornadoExecutionPlan executor7 = new TornadoExecutionPlan(immutableTaskGraph7);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor7.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
@@ -652,8 +653,8 @@ public class Particlefilter {
                     .task("t8", Particlefilter::findNewArray, u, arrayX, arrayY, CDF, xj, yj)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, xj, yj);
             ImmutableTaskGraph immutableTaskGraph8 = taskGraph8.snapshot();
-            TornadoExecutionPlan executor8 = new TornadoExecutionPlan(immutableTaskGraph8)
-                    .withDevice(device);
+            TornadoExecutionPlan executor8 = new TornadoExecutionPlan(immutableTaskGraph8);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor8.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
@@ -666,8 +667,8 @@ public class Particlefilter {
                     .task("t9", Particlefilter::resetWeights, arrayX, arrayY, xj, yj, weights)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights);
             ImmutableTaskGraph immutableTaskGraph9 = taskGraph9.snapshot();
-            TornadoExecutionPlan executor9 = new TornadoExecutionPlan(immutableTaskGraph9)
-                    .withDevice(device);
+            TornadoExecutionPlan executor9 = new TornadoExecutionPlan(immutableTaskGraph9);
+//                    .withDevice(device);
             taskEndTime = get_time();
             executor9.execute();
             taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
