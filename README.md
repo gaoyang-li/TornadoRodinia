@@ -2,6 +2,12 @@
 
 This project aims to comprehensively compare the performance of TornadoVM and Rodinia OpenMP across specific workloads.
 
+1. **rodinia**: implemented algorithms by using TornadoVM.
+
+2. **sequential**: implemented algorithms by using sequential Java.
+
+3. **record.md**: record which backend(s) support the implemented algorithms.
+
 ## Prerequisites
 
 Before you begin, ensure that you have met the following requirements:
