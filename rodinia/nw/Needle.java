@@ -6,6 +6,7 @@ import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
+import uk.ac.manchester.tornado.api.math.TornadoMath;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 
@@ -661,7 +662,7 @@ public class Needle {
     }
 
     public static int maximum(int a, int b, int c) {
-        return Math.max(a, Math.max(b, c));
+        return TornadoMath.max(a, TornadoMath.max(b, c));
     }
 
     public static void usage(String[] args) {
@@ -750,14 +751,14 @@ public class Needle {
 
     public static void nw_optimized1(VectorInt input_itemsets, VectorInt reference, VectorInt paras) {
         VectorInt blkk = new VectorInt(1);
-        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras, blkk)
                 .task("t1", Needle::parallel1, input_itemsets, reference, paras, blkk)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
         for (int blk = 1; blk <= (paras.get(1) - 1) / BLOCK_SIZE; blk++) {
             blkk.set(0, blk);
             executor1.execute();
@@ -767,14 +768,14 @@ public class Needle {
 
     public static void nw_optimized2(VectorInt input_itemsets, VectorInt reference, VectorInt paras) {
         VectorInt blkk = new VectorInt(1);
-        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
         TaskGraph taskGraph2 = new TaskGraph("s2")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras, blkk)
                 .task("t2", Needle::parallel2, input_itemsets, reference, paras, blkk)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
-                .withDevice(device);
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2);
+//                .withDevice(device);
         for (int blk = 2; blk <= (paras.get(1) - 1) / BLOCK_SIZE; blk++) {
             blkk.set(0, blk);
             executor2.execute();
