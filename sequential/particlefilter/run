@@ -1,0 +1,3 @@
+javac Particlefilter.java
+
+java Particlefilter x <dimX> y <dimY> z <Nfr> np <Nparticles>
