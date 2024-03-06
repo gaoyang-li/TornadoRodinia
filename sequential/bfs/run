@@ -1,0 +1,3 @@
+javac Bfs.java
+
+java Bfs <input_file> 

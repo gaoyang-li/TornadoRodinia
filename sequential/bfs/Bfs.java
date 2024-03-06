@@ -105,56 +105,6 @@ public class Bfs {
         }
     }
 
-    public static void initUpdateMask(int[] h_graph_nodes_starting, int[] h_graph_nodes_edges, int[] h_graph_mask, int[] h_graph_visited, int[] h_graph_edges, int[] h_cost, int[] h_updating_graph_mask) {
-        int[] stop = new int[1];
-        do {
-            stop[0] = 0; 
-            for (int tid = 0; tid < h_graph_nodes_starting.length; tid++) {
-                if (h_graph_mask[tid] == 1) {
-                    h_graph_mask[tid] = 0;
-                    for (int i = h_graph_nodes_starting[tid]; i < (h_graph_nodes_starting[tid] + h_graph_nodes_edges[tid]); i++) {
-                        int id = h_graph_edges[i];
-                        if (h_graph_visited[id] == 0) {
-                            h_cost[id] = h_cost[tid]+1;
-                            h_updating_graph_mask[id] = 1;
-                        }
-                    }
-                }
-            }
-            for ( int tid = 0; tid < h_updating_graph_mask.length; tid++) {
-                if (h_updating_graph_mask[tid] == 1) {
-                    h_graph_mask[tid] = 1;
-                    h_graph_visited[tid] = 1;
-                    stop[0] = 1;
-                    h_updating_graph_mask[tid] = 0;
-                }
-            }
-        } while (stop[0] == 1);
-    }
-
-    public static void initUpdateMask2(int[] h_graph_nodes_starting, int[] h_graph_nodes_edges, int[] h_graph_mask, int[] h_graph_visited, int[] h_graph_edges, int[] h_cost, int[] h_updating_graph_mask, int[] stop) {
-        for (int tid = 0; tid < h_graph_nodes_starting.length; tid++) {
-            if (h_graph_mask[tid] == 1) {
-                h_graph_mask[tid] = 0;
-                for (int i = h_graph_nodes_starting[tid]; i < (h_graph_nodes_starting[tid] + h_graph_nodes_edges[tid]); i++) {
-                    int id = h_graph_edges[i];
-                    if (h_graph_visited[id] == 0) {
-                        h_cost[id] = h_cost[tid]+1;
-                        h_updating_graph_mask[id] = 1;
-                    }
-                }
-            }
-        }
-        for (int tid = 0; tid < h_updating_graph_mask.length; tid++) {
-            if (h_updating_graph_mask[tid] == 1) {
-                h_graph_mask[tid] = 1;
-                h_graph_visited[tid] = 1;
-                stop[0] = 1; // stop = true
-                h_updating_graph_mask[tid] = 0;
-            }
-        }
-    }
-
     public static void traverseGraph(int no_of_nodes, int[] h_graph_edges, int[] h_graph_mask, int[] h_updating_graph_mask, int[] h_graph_visited, int[] h_cost) {
         System.out.println("Start traversing the tree");
         long startTime = System.nanoTime();

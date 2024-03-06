@@ -1,0 +1,3 @@
+javac Kmeans.java
+
+java Kmeans <input_file_name> <num_of_clusters> <threshold_value>
