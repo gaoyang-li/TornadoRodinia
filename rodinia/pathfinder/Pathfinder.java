@@ -19,14 +19,16 @@ public class Pathfinder {
     static Matrix2DInt wall;
     static VectorInt result;
     static final int seed = 9;
-    long cycles;
+    static VectorInt dst;
+    static VectorInt src;
+    static VectorInt temp;
 
     public static void init(String[] args) {
         if (args.length == 2) {
             cols = Integer.parseInt(args[0]);
             rows = Integer.parseInt(args[1]);
         } else {
-            System.out.println("Usage: Pathfinder width num_of_steps > out");
+            System.out.println("Usage: Pathfinder  <width>  <num_of_steps>  >  out");
             System.exit(1);
         }
         data = new VectorInt(rows * cols);
@@ -39,6 +41,7 @@ public class Pathfinder {
                 wall.set(i, j, rand.nextInt(10));
             }
         }
+
         int count = 0;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -57,48 +60,42 @@ public class Pathfinder {
         }
     }
 
-    public static void parallel(VectorInt temp, VectorInt src, VectorInt dst, Matrix2DInt wall) {
-        for (int t = 0; t < rows - 1; t++) {
-            temp = src;
-            src = dst;
-            dst = temp;
-            for (@Parallel int n = 0; n < cols; n++){
-                int min = src.get(n);
-                if (n > 0){
-                    min = TornadoMath.min(min, src.get(n - 1));
-                }
-                if (n < cols - 1){
-                    min = TornadoMath.min(min, src.get(n + 1));
-                }
-                dst.set(n, wall.get(t + 1, n) + min);
+    public static void parallel(int t, VectorInt src, VectorInt dst, Matrix2DInt wall){
+        for (int n = 0; n < cols; n++){
+            int min = src.get(n);
+            if (n > 0){
+                min = TornadoMath.min(min, src.get(n - 1));
             }
+            if (n < cols - 1){
+                min = TornadoMath.min(min, src.get(n + 1));
+            }
+            dst.set(n, wall.get(t + 1, n) + min);
         }
     }
 
     public static void run(String[] args) {
         init(args);
-        VectorInt dst = result;
-        VectorInt src = new VectorInt(cols);
-        VectorInt temp = new VectorInt(cols);
+        dst = result;
+        src = new VectorInt(cols);
+        temp = new VectorInt(cols);
 
         long startTime = System.nanoTime();
-        long graphtime = 0;
-        int t = 0;
-
-        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-        TaskGraph taskGraph1 = new TaskGraph("s1")
-                .transferToDevice(DataTransferMode.EVERY_EXECUTION, temp, src, dst, wall)
-                .task("t1", Pathfinder::parallel, temp, src, dst, wall)
-                .transferToHost(DataTransferMode.EVERY_EXECUTION, temp, src, dst, wall);
-        ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
-//                .withDevice(device);
-        parallel(temp, src, dst, wall);//executor1.execute();
-
-        dst = src;
+        for (int t = 0; t < rows - 1; t++) {
+            temp = src;
+            src = dst;
+            dst = temp;
+            TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+            TaskGraph taskGraph1 = new TaskGraph("s1")
+                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, t, src, dst, wall)
+                    .task("t1", Pathfinder::parallel, t, src, dst, wall)
+                    .transferToHost(DataTransferMode.EVERY_EXECUTION, dst);
+            ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
+            TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+            executor1.execute();
+        }
         long endTime = System.nanoTime();
 
-        System.out.println("Compute time: " + (double)(endTime - startTime - graphtime) / 1000000000);
+        System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
         for (int i = 0; i < cols; i++) {
             System.out.print(data.get(i) + " ");
         }
