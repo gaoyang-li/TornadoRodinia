@@ -61,7 +61,7 @@ public class Pathfinder {
     }
 
     public static void parallel(int t, VectorInt src, VectorInt dst, Matrix2DInt wall){
-        for (int n = 0; n < cols; n++){
+        for (@Parallel int n = 0; n < cols; n++){
             int min = src.get(n);
             if (n > 0){
                 min = TornadoMath.min(min, src.get(n - 1));
