@@ -8,7 +8,7 @@
 | lud | undetermined  | undetermined | support | support | unsupport | null
 | nw | undetermined  | undetermined | support | support | unsupport | null
 | particlefilter | same  | undetermined | support | unsupport | unsupport | results are all Nah with ptx-backend
-| pathfinder | null  | undetermined | unsupport | unsupport | unsupport | [bug](https://github.com/beehive-lab/TornadoVM/issues/331)
+| pathfinder | null  | undetermined | unsupport | support | unsupport | null
 | srad | undetermined  | undetermined | support | support | unsupport | null
 
 
