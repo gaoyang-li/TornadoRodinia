@@ -6,6 +6,7 @@ import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
+import uk.ac.manchester.tornado.api.math.TornadoMath;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 import uk.ac.manchester.tornado.api.types.collections.VectorFloat;
 import uk.ac.manchester.tornado.api.types.collections.VectorInt;
@@ -28,7 +29,6 @@ public class Srad {
         System.out.print("\t<y2>      - y2 value of the speckle\n");
         System.out.print("\t<x1>       - x1 value of the speckle\n");
         System.out.print("\t<x2>       - x2 value of the speckle\n");
-//        System.out.print("\t<no. of threads>  - no. of threads\n");
         System.out.print("\t<lamda>   - lambda (0,1)\n");
         System.out.print("\t<no. of iter>   - number of iterations\n");
         System.exit(1);
@@ -105,7 +105,6 @@ public class Srad {
             r2 = Integer.parseInt(args[3]); //y2 position of the speckle
             c1 = Integer.parseInt(args[4]); //x1 position of the speckle
             c2 = Integer.parseInt(args[5]); //x2 position of the speckle
-            //nthreads = Integer.parseInt(args[6]); // number of threads
             lambda = Float.parseFloat(args[6]); //Lambda value
             niter = Integer.parseInt(args[7]); //number of iterations
             intParas.set(0, rows);
@@ -149,7 +148,7 @@ public class Srad {
         random_matrix(I, rows, cols);
 
         for (k = 0; k < size_I; k++) {
-            J.set(k, (float) Math.exp(I.get(k)));
+            J.set(k, (float) TornadoMath.exp(I.get(k)));
         }
 
         System.out.print("Start the SRAD main loop\n");
@@ -161,10 +160,10 @@ public class Srad {
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, intParas, doubleParas, J, dN, dS, dW, dE, iN, iS, jW, jE, c)
                 .task("t1", Srad::parallel1, intParas, doubleParas, J, dN, dS, dW, dE, iN, iS, jW, jE, c)
                 .task("t2", Srad::parallel2, intParas, doubleParas, c, iS, dN, dS, dW, dE, jE, J)
-                .transferToHost(DataTransferMode.EVERY_EXECUTION, intParas, doubleParas, J, dN, dS, dW, dE, iN, iS, jW, jE, c);
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, J, dN, dS, dW, dE, c);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
-                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
 
         for (iter = 0; iter < niter; iter++) {
             sum = 0;
@@ -181,8 +180,9 @@ public class Srad {
             q0sqr = varROI / (meanROI * meanROI);
             doubleParas.set(0, lambda);
             doubleParas.set(1, q0sqr);
-            executor1.execute(); //parallel1(intParas, doubleParas);
-            //executor2.execute();   //parallel2(intParas, doubleParas);
+            executor1.execute();
+            // parallel1(intParas, doubleParas);
+            // parallel2(intParas, doubleParas);
         }
         if (printFlag == true) {
             for (int i = 0; i < rows; i++) {
