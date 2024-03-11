@@ -15,21 +15,21 @@ public class Srad {
         System.exit(1);
     }
 
-    public static void random_matrix(double[] I, int rows, int cols) {
+    public static void random_matrix(float[] I, int rows, int cols) {
         Random random = new Random(7); // Seed with 7
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                I[i * cols + j] = random.nextDouble();
+                I[i * cols + j] = random.nextFloat();
             }
         }
     }
 
     public static void main(String[] args) {
         int size_I, size_R, iter, k, r1 = 0, r2 = 0, c1 = 0, c2 = 0, rows = 0, cols = 0, niter = 10;
-        double sum, sum2, tmp, meanROI, varROI, Jc, G2, L, num, den, qsqr, cN, cS, cW, cE, D, lambda = 0, q0sqr = 0;
+        float sum, sum2, tmp, meanROI, varROI, Jc, G2, L, num, den, qsqr, cN, cS, cW, cE, D, lambda = 0, q0sqr = 0;
         int[] iN, iS, jE, jW;
-        double[] I, J, dN, dS, dW, dE, c;
-        boolean printFlag = false;
+        float[] I, J, dN, dS, dW, dE, c;
+        boolean printFlag = true;
         if (args.length == 8) {
             rows = Integer.parseInt(args[0]); //number of rows in the domain
             cols = Integer.parseInt(args[1]); //number of cols in the domain
@@ -41,7 +41,7 @@ public class Srad {
             r2 = Integer.parseInt(args[3]); //y2 position of the speckle
             c1 = Integer.parseInt(args[4]); //x1 position of the speckle
             c2 = Integer.parseInt(args[5]); //x2 position of the speckle
-            lambda = Double.parseDouble(args[6]); //Lambda value
+            lambda = Float.parseFloat(args[6]); //Lambda value
             niter = Integer.parseInt(args[7]); //number of iterations
         } else {
             usage(args);
@@ -50,19 +50,19 @@ public class Srad {
         size_I = cols * rows;
         size_R = (r2 - r1 + 1) * (c2 - c1 + 1);
 
-        I = new double[size_I];
-        J = new double[size_I];
-        c = new double[size_I];
+        I = new float[size_I];
+        J = new float[size_I];
+        c = new float[size_I];
 
         iN = new int[rows];
         iS = new int[rows];
         jW = new int[cols];
         jE = new int[cols];
 
-        dN = new double[size_I];
-        dS = new double[size_I];
-        dW = new double[size_I];
-        dE = new double[size_I];
+        dN = new float[size_I];
+        dS = new float[size_I];
+        dW = new float[size_I];
+        dE = new float[size_I];
 
         for (int i = 0; i < rows; i++) {
             iN[i] = i - 1;
@@ -82,7 +82,7 @@ public class Srad {
         random_matrix(I, rows, cols);
 
         for (k = 0; k < size_I; k++) {
-            J[k] = (double) Math.exp(I[k]);
+            J[k] = (float) Math.exp(I[k]);
         }
 
         System.out.printf("Start the SRAD main loop\n");
@@ -114,12 +114,12 @@ public class Srad {
                         dW[k] * dW[k] + dE[k] * dE[k]) / (Jc * Jc);
 
                     L = (dN[k] + dS[k] + dW[k] + dE[k]) / Jc;
-                    num = (0.5 * G2) - ((1.0 / 16.0) * (L * L));
-                    den = 1 + (.25 * L);
+                    num = (float) ((0.5 * G2) - ((1.0 / 16.0) * (L * L)));
+                    den = (float) (1 + (.25 * L));
                     qsqr = num / (den * den);
                     // diffusion coefficent (equ 33)
                     den = (qsqr - q0sqr) / (q0sqr * (1 + q0sqr));
-                    c[k] = 1.0 / (1.0 + den);
+                    c[k] = (float) (1.0 / (1.0 + den));
                     // saturate diffusion coefficent
                     if (c[k] < 0) {
                         c[k] = 0;
@@ -140,7 +140,7 @@ public class Srad {
                     // divergence (equ 58)
                     D = cN * dN[k] + cS * dS[k] + cW * dW[k] + cE * dE[k];
                     // image update (equ 61)
-                    J[k] = J[k] + 0.25 * lambda * D;
+                    J[k] = (float) (J[k] + 0.25 * lambda * D);
                 }
             }
         }
