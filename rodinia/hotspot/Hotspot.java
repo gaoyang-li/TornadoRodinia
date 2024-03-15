@@ -189,7 +189,7 @@ public class Hotspot {
         try {
             scanner = new Scanner(new File(file));
             for (int i = 0; i < grid_rows * grid_cols; i++) {
-                if (!scanner.hasNextDouble()) {
+                if (!scanner.hasNextFloat()) {
                     System.out.println("not enough lines in file");
                     System.exit(1);
                 } else {
