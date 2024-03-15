@@ -8,17 +8,15 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.annotations.Reduce;
 import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
-import uk.ac.manchester.tornado.api.math.TornadoMath;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
 import uk.ac.manchester.tornado.api.types.arrays.DoubleArray;
 import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
 import uk.ac.manchester.tornado.api.types.vectors.Int4;
 
-//import static java.lang.TornadoMath.*;
 
 public class Particlefilter {
-    static final double PI = TornadoMath.PI();
+    static final double PI = Math.PI;
     // M value for Linear Congruential Generator (LCG); use GCC's value
     static long M = Integer.MAX_VALUE;
     // A value for LCG
@@ -78,7 +76,7 @@ public class Particlefilter {
     public static double randu(VectorInt seed, int index) {
         int num = A * seed.get(index) + C;
         seed.set(index, (int)(num % M));
-        return TornadoMath.abs(seed.get(index) / ((double) M));
+        return Math.abs(seed.get(index) / ((double) M));
     }
 
     /*
@@ -91,9 +89,9 @@ public class Particlefilter {
         /*Box-Muller algorithm*/
         double u = randu(seed, index);
         double v = randu(seed, index);
-        double cosine = TornadoMath.cos(2 * PI * v);
-        double rt = -2 * TornadoMath.log(u);
-        return TornadoMath.sqrt(rt) * cosine;
+        double cosine = Math.cos(2 * PI * v);
+        double rt = -2 * Math.log(u);
+        return Math.sqrt(rt) * cosine;
     }
 
     /*
@@ -125,7 +123,7 @@ public class Particlefilter {
         int x, y;
         for (x = 0; x < diameter; x++) {
             for (y = 0; y < diameter; y++) {
-                double distance = TornadoMath.sqrt(TornadoMath.pow((double)(x - radius + 1), 2) + TornadoMath.pow((double)(y - radius + 1), 2));
+                double distance = Math.sqrt(Math.pow((double)(x - radius + 1), 2) + Math.pow((double)(y - radius + 1), 2));
                 if (distance < radius)
                     disk.set(x * diameter + y, 1);
             }
@@ -159,7 +157,7 @@ public class Particlefilter {
         int x, y;
         for (x = startX; x < endX; x++) {
             for (y = startY; y < endY; y++) {
-                double distance = TornadoMath.sqrt(TornadoMath.pow((double)(x - posX), 2) + TornadoMath.pow((double)(y - posY), 2));
+                double distance = Math.sqrt(Math.pow((double)(x - posX), 2) + Math.pow((double)(y - posY), 2));
                 if (distance < error)
                     matrix.set(x * dimY * dimZ + y * dimZ + posZ, 1);
             }
@@ -234,8 +232,8 @@ public class Particlefilter {
         /*move point*/
         int xk, yk, pos;
         for (k = 1; k < Nfr; k++) {
-            xk = TornadoMath.abs(x0 + (k - 1));
-            yk = TornadoMath.abs(y0 - 2 * (k - 1));
+            xk = Math.abs(x0 + (k - 1));
+            yk = Math.abs(y0 - 2 * (k - 1));
             pos = yk * IszY * Nfr + xk * Nfr + k;
             if (pos >= max_size)
                 pos = 0;
@@ -272,7 +270,7 @@ public class Particlefilter {
         double likelihoodSum = 0.0;
         int y;
         for (y = 0; y < numOnes; y++)
-            likelihoodSum += (TornadoMath.pow((I.get(ind.get(y)) - 100), 2) - TornadoMath.pow((I.get(ind.get(y)) - 228), 2)) / 50.0;
+            likelihoodSum += (Math.pow((I.get(ind.get(y)) - 100), 2) - Math.pow((I.get(ind.get(y)) - 228), 2)) / 50.0;
         return likelihoodSum;
     }
 
@@ -385,7 +383,7 @@ public class Particlefilter {
 
     public static void updateWeights(DoubleArray weights, VectorDouble likelihood) {
         for (@Parallel int x = 0; x < weights.getSize(); x++) {
-            weights.set(x, weights.get(x) * TornadoMath.exp(likelihood.get(x)));
+            weights.set(x, weights.get(x) * Math.exp(likelihood.get(x)));
         }
     }
 
@@ -621,7 +619,7 @@ public class Particlefilter {
             System.out.printf("TIME TO MOVE OBJECT TOOK: %f\n", elapsed_time(normalize, move_time - (taskEndTime - taskStartTime)));
             System.out.printf("XE: %f\n", xe.get(0));
             System.out.printf("YE: %f\n", ye.get(0));
-            double distance = TornadoMath.sqrt(TornadoMath.pow((double)(xe.get(0) - (int) roundDouble(IszY / 2.0)), 2) + TornadoMath.pow((double)(ye.get(0) - (int) roundDouble(IszX / 2.0)), 2));
+            double distance = Math.sqrt(Math.pow((double)(xe.get(0) - (int) roundDouble(IszY / 2.0)), 2) + Math.pow((double)(ye.get(0) - (int) roundDouble(IszX / 2.0)), 2));
             System.out.printf("%f\n", distance);
 
             CDF.set(0, weights.get(0));
