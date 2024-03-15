@@ -8,8 +8,7 @@ import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.math.TornadoMath;
 import uk.ac.manchester.tornado.api.runtime.TornadoRuntime;
-import uk.ac.manchester.tornado.api.types.arrays.DoubleArray;
-import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
+import uk.ac.manchester.tornado.api.types.arrays.FloatArray;
 import java.io.File;
 import java.util.Scanner;
 
@@ -18,7 +17,7 @@ public class Lud {
     static int matrix_dim = 0;
     static int do_verify = 1;
 
-    public static void lud_diagonal(DoubleArray a, int size, int offset) {
+    public static void lud_diagonal(FloatArray a, int size, int offset) {
         int i, j, k;
         for (i = 0; i < 16; i++) {
             for (j = i; j < 16; j++) {
@@ -26,7 +25,7 @@ public class Lud {
                     a.set(offset * size + i * size + j + offset, a.get(offset * size + i * size + j + offset) - a.get(offset * size + i * size + k + offset) * a.get(offset * size + k * size + j + offset));
                 }
             }
-            float temp = (float) (1 / a.get(offset * size + i * size + i + offset));
+            float temp = 1 / a.get(offset * size + i * size + i + offset);
             for (j = i + 1; j < 16; j++) {
                 for (k = 0; k < i; k++) {
                     a.set(offset * size + j * size + i + offset, a.get(offset * size + j * size + i + offset) - a.get(offset * size + j * size + k + offset) * a.get(offset * size + k * size + i + offset));
@@ -37,7 +36,7 @@ public class Lud {
     }
 
     // implements block LU factorization
-    public static void lud(DoubleArray a, int size) {
+    public static void lud(FloatArray a, int size) {
 
         //int offset;
         //System.out.println("running OMP on host");
@@ -52,10 +51,10 @@ public class Lud {
             for (@Parallel int chunk_idx = 0; chunk_idx < chunks_in_inter_row; chunk_idx++) {
                 int i, j, k, i_global, j_global, i_here, j_here;
                 float sum;
-                VectorDouble temp = new VectorDouble(16 * 16);
+                float[] temp = new float[16 * 16];
                 for (i = 0; i < 16; i++) {
                     for (j = 0; j < 16; j++) {
-                        temp.set(i * 16 + j, a.get(size * (i + offset) + offset + j));
+                        temp[i * 16 + j] = a.get(size * (i + offset) + offset + j);
                     }
                 }
                 i_global = offset;
@@ -66,7 +65,7 @@ public class Lud {
                     for (i = 0; i < 16; i++) {
                         sum = 0;
                         for (k = 0; k < i; k++) {
-                            sum += temp.get(16 * i + k) * a.get((i_global + k) * size + (j_global + j));
+                            sum += temp[16 * i + k] * a.get((i_global + k) * size + (j_global + j));
                         }
                         i_here = i_global + i;
                         j_here = j_global + j;
@@ -80,7 +79,7 @@ public class Lud {
                     for (j = 0; j < 16; j++) {
                         sum = 0;
                         for (k = 0; k < j; k++) {
-                            sum += a.get((i_global + i) * size + (j_global + k)) * temp.get(16 * k + j);
+                            sum += a.get((i_global + i) * size + (j_global + k)) * temp[16 * k + j];
                         }
                         i_here = i_global + i;
                         j_here = j_global + j;
@@ -92,29 +91,29 @@ public class Lud {
             int chunks_per_inter = chunks_in_inter_row * chunks_in_inter_row;
             for (@Parallel int chunk_idx = 0; chunk_idx < chunks_per_inter; chunk_idx++) {
                 int i, j, k, i_global, j_global;
-                VectorDouble temp_top = new VectorDouble(16 * 16);
-                VectorDouble temp_left = new VectorDouble(16 * 16);
-                VectorDouble sum = new VectorDouble(16);
+                float[] temp_top = new float[16 * 16];
+                float[] temp_left = new float[16 * 16];
+                float[] sum = new float[16];
 
                 i_global = offset + 16 * (1 + chunk_idx / chunks_in_inter_row);
                 j_global = offset + 16 * (1 + chunk_idx % chunks_in_inter_row);
 
                 for (i = 0; i < 16; i++) {
                     for (j = 0; j < 16; j++) {
-                        temp_top.set(i * 16 + j, a.get(size * (i + offset) + j + j_global));
-                        temp_left.set(i * 16 + j, a.get(size * (i + i_global) + offset + j));
+                        temp_top[i * 16 + j] = a.get(size * (i + offset) + j + j_global);
+                        temp_left[i * 16 + j] = a.get(size * (i + i_global) + offset + j);
                     }
                 }
 
                 for (i = 0; i < 16; i++) {
                     for (k = 0; k < 16; k++) {
                         for (j = 0; j < 16; j++) {
-                            sum.set(j, sum.get(j) + temp_left.get(16 * i + k) * temp_top.get(16 * k + j));
+                            sum[j] += temp_left[16 * i + k] * temp_top[16 * k + j];
                         }
                     }
                     for (j = 0; j < 16; j++) {
-                        a.set((i + i_global) * size + (j + j_global), a.get((i + i_global) * size + (j + j_global)) - sum.get(j));
-                        sum.set(j, 0);
+                        a.set((i + i_global) * size + (j + j_global), a.get((i + i_global) * size + (j + j_global)) - sum[j]);
+                        sum[j] = 0;
                     }
                 }
             }
@@ -123,14 +122,14 @@ public class Lud {
         lud_diagonal(a, size, size-16);
     }
 
-    public static void matrix_duplicate(DoubleArray src, VectorDouble dst) {
+    public static void matrix_duplicate(FloatArray src, float[] dst) {
         for (int i = 0; i < matrix_dim * matrix_dim; i++) {
-            dst.set(i, src.get(i));
+            dst[i] = src.get(i);
         }
     }
 
-    public static void lud_verify(VectorDouble m, DoubleArray lu) {
-        VectorDouble tmp = new VectorDouble(matrix_dim * matrix_dim);
+    public static void lud_verify(float[] m, FloatArray lu) {
+        float[] tmp = new float[matrix_dim * matrix_dim];
         for (int i = 0; i < matrix_dim; i++) {
             for (int j = 0; j < matrix_dim; j++) {
                 float sum = 0;
@@ -139,49 +138,49 @@ public class Lud {
                     if (i == k) {
                         l = 1;
                     } else {
-                        l = (float) lu.get(i * matrix_dim + k);
+                        l = lu.get(i * matrix_dim + k);
                     }
-                    u = (float) lu.get(k * matrix_dim + j);
+                    u = lu.get(k * matrix_dim + j);
                     sum += l * u;
                 }
-                tmp.set(i * matrix_dim + j, sum);
+                tmp[i * matrix_dim + j] = sum;
             }
         }
         for (int i = 0; i < matrix_dim; i++) {
             for (int j = 0; j < matrix_dim; j++) {
-                if (TornadoMath.abs(m.get(i * matrix_dim + j) - tmp.get(i * matrix_dim + j)) > 0.0001) {
-                    System.out.printf("dismatch at (%d, %d): (o)%f (n)%f\n", i, j, m.get(i * matrix_dim + j), tmp.get(i * matrix_dim + j));
+                if (TornadoMath.abs(m[i * matrix_dim + j] - tmp[i * matrix_dim + j]) > 0.0001) {
+                    System.out.printf("dismatch at (%d, %d): (o)%f (n)%f\n", i, j, m[i * matrix_dim + j], tmp[i * matrix_dim + j]);
                 }
             }
         }
     }
 
-    public static void create_matrix(DoubleArray mp, int size) {
+    public static void create_matrix(FloatArray mp, int size) {
         float lambda = -0.001f;
-        VectorDouble coe = new VectorDouble(2 * size - 1);
+        float[] coe = new float[2 * size - 1];
         float coe_i = 0.0f;
 
         for (int i = 0; i < size; i++) {
             coe_i = (float) (10 * TornadoMath.exp(lambda * i));
             int j = size - 1 + i;
-            coe.set(j, coe_i);
+            coe[j] = coe_i;
             j = size - 1 - i;
-            coe.set(j, coe_i);
+            coe[j] = coe_i;
         }
 
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                mp.set(i * size + j, coe.get(size - 1 - i + j));
+                mp.set(i * size + j, coe[size - 1 - i + j]);
             }
         }
     }
 
-    public static void create_matrix_from_file(DoubleArray mp, String input_file) {
+    public static void create_matrix_from_file(FloatArray mp, String input_file) {
         try {
             Scanner scanner = new Scanner(new File(input_file));
             scanner.nextInt();
             for (int i = 0; i < matrix_dim * matrix_dim; i++) {
-                mp.set(i, scanner.nextDouble());
+                mp.set(i, scanner.nextFloat());
             }
             scanner.close();
         } catch (Exception e) {
@@ -190,7 +189,7 @@ public class Lud {
         }
     }
 
-    public static void print_matrix(DoubleArray m) {
+    public static void print_matrix(FloatArray m) {
         for (int i = 0; i < matrix_dim; i++) {
             for (int j = 0; j < matrix_dim; j++)
                 System.out.printf("%f ", m.get(i * matrix_dim + j));
@@ -216,8 +215,8 @@ public class Lud {
             System.exit(1);
         }
 
-        DoubleArray m;
-        VectorDouble mm;
+        FloatArray m;
+        float[] mm;
 
         if (input_file != null) {
             try {
@@ -229,12 +228,12 @@ public class Lud {
                 System.err.println("failed to open file");
                 System.exit(1);
             }
-            m = new DoubleArray(matrix_dim * matrix_dim);
-            mm = new VectorDouble(matrix_dim * matrix_dim);
+            m = new FloatArray(matrix_dim * matrix_dim);
+            mm = new float[matrix_dim * matrix_dim];
             create_matrix_from_file(m, input_file);
         } else {
-            m = new DoubleArray(matrix_dim * matrix_dim);
-            mm = new VectorDouble(matrix_dim * matrix_dim);
+            m = new FloatArray(matrix_dim * matrix_dim);
+            mm = new float[matrix_dim * matrix_dim];
             create_matrix(m, matrix_dim);
         }
 
@@ -245,15 +244,15 @@ public class Lud {
         }
 
         long startTime = System.nanoTime();
-        System.out.println("running on host");
+        System.out.println("running OMP on host");
         TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, m, matrix_dim)
                 .task("t1", Lud::lud, m, matrix_dim)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, m);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
-//                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                .withDevice(device);
         executor1.execute();
         //lud(m, matrix_dim);
         long endTime = System.nanoTime();
