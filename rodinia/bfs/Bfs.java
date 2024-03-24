@@ -117,6 +117,7 @@ public class Bfs {
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, h_graph_mask, h_graph_visited, h_cost, h_updating_graph_mask, stop);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
         TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+//                .withDevice(device);
 
         long startTime = System.nanoTime();
         do {
