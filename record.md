@@ -1,5 +1,5 @@
 
-| Benchmark  | Result compared to Rodinia Openmp | Exe time compared to Rodinia Openmp | opencl | ptx | spirv | remark |
+| Algorithm  | Result compared to Rodinia Openmp | Exe time compared to Rodinia Openmp | opencl | ptx | spirv | remark |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 | bfs | same  | undetermined | support | support | unsupport | null
 | hotspot | same  | undetermined | unsupport | support | unsupport | bail out with opencl-backend
