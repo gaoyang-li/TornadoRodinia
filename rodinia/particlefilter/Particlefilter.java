@@ -14,7 +14,6 @@ import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 import uk.ac.manchester.tornado.api.types.collections.VectorDouble;
 import uk.ac.manchester.tornado.api.types.vectors.Int4;
 
-
 public class Particlefilter {
     static final double PI = Math.PI;
     // M value for Linear Congruential Generator (LCG); use GCC's value
@@ -23,8 +22,7 @@ public class Particlefilter {
     static int A = 1103515245;
     // C value for LCG
     static int C = 12345;
-
-    static long taskTotalTime = 0;
+    static long executorTime;
 
     //returns a long int representing the time
     public static long get_time() {
@@ -33,7 +31,7 @@ public class Particlefilter {
 
     // Returns the number of seconds elapsed between the two specified times
     public static double elapsed_time(long start_time, long end_time) {
-        return (double)(end_time - start_time) / (1000000000);
+        return (end_time - start_time) / 1_000_000_000.0;
     }
 
     // Takes in a double and returns an integer that approximates to that double
@@ -439,10 +437,9 @@ public class Particlefilter {
 
     public static void particleFilter(VectorInt I, int IszX, int IszY, int Nfr, VectorInt seed, int Nparticles) {
         int max_size = IszX * IszY * Nfr;
-        long taskStartTime = 0;
-        long taskEndTime = 0;
-        taskTotalTime = 0;
+        executorTime = 0;
         long start = get_time();
+        long t1, t2 = 0;
 
         // original partice centroid
         DoubleArray xe = new DoubleArray(1);
@@ -473,25 +470,22 @@ public class Particlefilter {
         getneighbors(disk, countOnes, objxy, radius);
 
         long get_neighbors = get_time();
-        System.out.printf("TIME TO GET NEIGHBORS TOOK: %f\n", elapsed_time(start, get_neighbors));
+        System.out.printf("TIME TO GET NEIGHBORS TOOK: %f seconds\n", elapsed_time(start, get_neighbors));
         //initial weights are all equal (1/Nparticles)
         DoubleArray weights = new DoubleArray(Nparticles);
-        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
-        taskStartTime = get_time();
-
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights)
                 .task("t1", Particlefilter::setWeights, weights)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
-//                .withDevice(device);
-        taskEndTime = get_time();
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                .withDevice(device);
+        t1 = System.nanoTime();
         executor1.execute();
-
-        taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
-        long get_weights = get_time() - (taskEndTime - taskStartTime);
-        System.out.printf("TIME TO GET WEIGHTSTOOK: %f\n", elapsed_time(get_neighbors, get_weights));
+        t2 = System.nanoTime();
+        executorTime += t2 - t1;
+        System.out.printf("TIME TO GET WEIGHTSTOOK: %f seconds\n", elapsed_time(t1, t2));
         //initial likelihood to 0.0
         VectorDouble likelihood = new VectorDouble(Nparticles);
         DoubleArray arrayX = new DoubleArray(Nparticles);
@@ -501,20 +495,96 @@ public class Particlefilter {
         VectorDouble CDF = new VectorDouble(Nparticles);
         VectorDouble u = new VectorDouble(Nparticles);
         VectorInt ind = new VectorInt(countOnes * Nparticles);
-        taskStartTime = get_time();
 
         TaskGraph taskGraph2 = new TaskGraph("s2")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, xe, ye)
                 .task("t2", Particlefilter::setArrayXY, arrayX, arrayY, xe, ye)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2);
-//                .withDevice(device);
-        taskEndTime = get_time();
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
+                .withDevice(device);
+        t1 = System.nanoTime();
         executor2.execute();
+        t2 = System.nanoTime();
+        executorTime += t2 - t1;
+        System.out.printf("TIME TO SET ARRAYS TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-        taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
-        System.out.printf("TIME TO SET ARRAYS TOOK: %f\n", elapsed_time(get_weights, get_time() - (taskEndTime - taskStartTime)));
+        TaskGraph taskGraph3 = new TaskGraph("s3")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, seed)
+                .task("t3", Particlefilter::updateArrayXY, arrayX, arrayY, seed)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
+        ImmutableTaskGraph immutableTaskGraph3 = taskGraph3.snapshot();
+        TornadoExecutionPlan executor3 = new TornadoExecutionPlan(immutableTaskGraph3)
+                .withDevice(device);
+
+        TaskGraph taskGraph11 = new TaskGraph("s11")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, objxy, ind, likelihood, paras, I)
+                .task("t11", Particlefilter::computeLikelihood, arrayX, arrayY, objxy, ind, likelihood, paras, I)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, ind, likelihood);
+        ImmutableTaskGraph immutableTaskGraph11 = taskGraph11.snapshot();
+        TornadoExecutionPlan executor11 = new TornadoExecutionPlan(immutableTaskGraph11)
+                .withDevice(device);
+
+        TaskGraph taskGraph4 = new TaskGraph("s4")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, likelihood)
+                .task("t4", Particlefilter::updateWeights, weights, likelihood)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
+        ImmutableTaskGraph immutableTaskGraph4 = taskGraph4.snapshot();
+        TornadoExecutionPlan executor4 = new TornadoExecutionPlan(immutableTaskGraph4)
+                .withDevice(device);
+
+        DoubleArray sumWeights = new DoubleArray(1);
+        sumWeights.set(0, 0);
+        TaskGraph taskGraph5 = new TaskGraph("s5")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, sumWeights)
+                .task("t5", Particlefilter::computeSumWeights, weights, sumWeights)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, sumWeights);
+        ImmutableTaskGraph immutableTaskGraph5 = taskGraph5.snapshot();
+        TornadoExecutionPlan executor5 = new TornadoExecutionPlan(immutableTaskGraph5)
+                .withDevice(device);
+
+        TaskGraph taskGraph6 = new TaskGraph("s6")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, sumWeights)
+                .task("t6", Particlefilter::normaliseWeights, weights, sumWeights)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
+        ImmutableTaskGraph immutableTaskGraph6 = taskGraph6.snapshot();
+        TornadoExecutionPlan executor6 = new TornadoExecutionPlan(immutableTaskGraph6)
+                .withDevice(device);
+
+        TaskGraph taskGraph10 = new TaskGraph("s10")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xe, ye)
+                .task("t10", Particlefilter::moveObjectXe, arrayX, weights, xe)
+                .task("t10_", Particlefilter::moveObjectYe, arrayY, weights, ye)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xe, ye);
+        ImmutableTaskGraph immutableTaskGraph10 = taskGraph10.snapshot();
+        TornadoExecutionPlan executor10 = new TornadoExecutionPlan(immutableTaskGraph10)
+                .withDevice(device);
+
+        VectorDouble u1 = new VectorDouble(1);
+        TaskGraph taskGraph7 = new TaskGraph("s7")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, u, u1)
+                .task("t7", Particlefilter::findU, u, u1)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, u);
+        ImmutableTaskGraph immutableTaskGraph7 = taskGraph7.snapshot();
+        TornadoExecutionPlan executor7 = new TornadoExecutionPlan(immutableTaskGraph7)
+                .withDevice(device);
+
+        TaskGraph taskGraph8 = new TaskGraph("s8")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, u, arrayX, arrayY, CDF, xj, yj)
+                .task("t8", Particlefilter::findNewArray, u, arrayX, arrayY, CDF, xj, yj)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, xj, yj);
+        ImmutableTaskGraph immutableTaskGraph8 = taskGraph8.snapshot();
+        TornadoExecutionPlan executor8 = new TornadoExecutionPlan(immutableTaskGraph8)
+                .withDevice(device);
+
+        TaskGraph taskGraph9 = new TaskGraph("s9")
+                .transferToDevice(DataTransferMode.EVERY_EXECUTION, xj, yj, weights)
+                .task("t9", Particlefilter::resetWeights, arrayX, arrayY, xj, yj, weights)
+                .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights);
+        ImmutableTaskGraph immutableTaskGraph9 = taskGraph9.snapshot();
+        TornadoExecutionPlan executor9 = new TornadoExecutionPlan(immutableTaskGraph9)
+                .withDevice(device);
+
         // int indX, indY;
         for (int k = 1; k < Nfr; k++) {
             paras.setW(k);
@@ -522,156 +592,86 @@ public class Particlefilter {
             //apply motion model
             //draws sample from motion model (random walk). The only prior information
             //is that the object moves 2x as fast as in the y direction
-            taskStartTime = get_time();
-            TaskGraph taskGraph3 = new TaskGraph("s3")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, seed)
-                    .task("t3", Particlefilter::updateArrayXY, arrayX, arrayY, seed)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY);
-            ImmutableTaskGraph immutableTaskGraph3 = taskGraph3.snapshot();
-            TornadoExecutionPlan executor3 = new TornadoExecutionPlan(immutableTaskGraph3);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor3.execute();
-
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long error = get_time();
-            System.out.printf("TIME TO SET ERROR TOOK: %f\n", elapsed_time(set_arrays, error - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO SET ERROR TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-            taskStartTime = get_time();
-            TaskGraph taskGraph11 = new TaskGraph("s11")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, objxy, ind, likelihood, paras, I)
-                    .task("t11", Particlefilter::computeLikelihood, arrayX, arrayY, objxy, ind, likelihood, paras, I)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, ind, likelihood);
-            ImmutableTaskGraph immutableTaskGraph11 = taskGraph11.snapshot();
-            TornadoExecutionPlan executor11 = new TornadoExecutionPlan(immutableTaskGraph11);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor11.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long likelihood_time = get_time();
-            System.out.printf("TIME TO GET LIKELIHOODS TOOK: %f\n", elapsed_time(error, likelihood_time - (taskEndTime - taskStartTime)));
-            // update & normalize weights
-            // using equation (63) of Arulampalam Tutorial
-            //            for(x = 0; x < Nparticles; x++){
-            //                weights.set(x, weights.get(x) * exp(likelihood.get(x)));
-            //            }
-            taskStartTime = get_time();
-            TaskGraph taskGraph4 = new TaskGraph("s4")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, likelihood)
-                    .task("t4", Particlefilter::updateWeights, weights, likelihood)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
-            ImmutableTaskGraph immutableTaskGraph4 = taskGraph4.snapshot();
-            TornadoExecutionPlan executor4 = new TornadoExecutionPlan(immutableTaskGraph4);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            System.out.printf("TIME TO GET LIKELIHOODS TOOK: %f seconds\n", elapsed_time(t1, t2));
+
+            t1 = System.nanoTime();
             executor4.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long exponential = get_time();
-            System.out.printf("TIME TO GET EXP TOOK: %f\n", elapsed_time(likelihood_time, exponential - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO GET EXP TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-            DoubleArray sumWeights = new DoubleArray(1); // double sumWeights = 0;
+            //sumWeights = new DoubleArray(1);
             sumWeights.set(0, 0);
-            taskStartTime = get_time();
-            TaskGraph taskGraph5 = new TaskGraph("s5")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, sumWeights)
-                    .task("t5", Particlefilter::computeSumWeights, weights, sumWeights)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, sumWeights);
-            ImmutableTaskGraph immutableTaskGraph5 = taskGraph5.snapshot();
-            TornadoExecutionPlan executor5 = new TornadoExecutionPlan(immutableTaskGraph5);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor5.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long sum_time = get_time();
-            System.out.printf("TIME TO SUM WEIGHTS TOOK: %f\n", elapsed_time(exponential, sum_time - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO SUM WEIGHTS TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-            taskStartTime = get_time();
-            TaskGraph taskGraph6 = new TaskGraph("s6")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, weights, sumWeights)
-                    .task("t6", Particlefilter::normaliseWeights, weights, sumWeights)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, weights);
-            ImmutableTaskGraph immutableTaskGraph6 = taskGraph6.snapshot();
-            TornadoExecutionPlan executor6 = new TornadoExecutionPlan(immutableTaskGraph6);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor6.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long normalize = get_time();
-            System.out.printf("TIME TO NORMALIZE WEIGHTS TOOK: %f\n", elapsed_time(sum_time, normalize - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO NORMALIZE WEIGHTS TOOK: %f seconds\n", elapsed_time(t1, t2));
 
             xe.set(0, 0); // xe = 0;
             ye.set(0, 0); // ye = 0;
 
-            taskStartTime = get_time();
-            TaskGraph taskGraph10 = new TaskGraph("s10")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xe, ye)
-                    .task("t10", Particlefilter::moveObjectXe, arrayX, weights, xe)
-                    .task("t10_", Particlefilter::moveObjectYe, arrayY, weights, ye)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights, xe, ye);
-            ImmutableTaskGraph immutableTaskGraph10 = taskGraph10.snapshot();
-            TornadoExecutionPlan executor10 = new TornadoExecutionPlan(immutableTaskGraph10);
-//                    .withDevice(device);
+            t1 = System.nanoTime();
             executor10.execute();
-            taskEndTime = get_time();
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
+            System.out.printf("TIME TO MOVE OBJECT TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
             long move_time = get_time();
-            System.out.printf("TIME TO MOVE OBJECT TOOK: %f\n", elapsed_time(normalize, move_time - (taskEndTime - taskStartTime)));
             System.out.printf("XE: %f\n", xe.get(0));
             System.out.printf("YE: %f\n", ye.get(0));
             double distance = Math.sqrt(Math.pow((double)(xe.get(0) - (int) roundDouble(IszY / 2.0)), 2) + Math.pow((double)(ye.get(0) - (int) roundDouble(IszX / 2.0)), 2));
             System.out.printf("%f\n", distance);
-
             CDF.set(0, weights.get(0));
             for (x = 1; x < Nparticles; x++) {
                 CDF.set(x, weights.get(x) + CDF.get(x - 1));
             }
             long cum_sum = get_time();
-            System.out.printf("TIME TO CALC CUM SUM TOOK: %f\n", elapsed_time(move_time, cum_sum));
-            VectorDouble u1 = new VectorDouble(1);
+            System.out.printf("TIME TO CALC CUM SUM TOOK: %f seconds\n", elapsed_time(move_time, cum_sum));
+            //            VectorDouble u1 = new VectorDouble(1);
             u1.set(0, (1 / ((double)(Nparticles))) * randu(seed, 0)); //double u1 = (1/((double)(Nparticles)))*randu(seed, 0);
 
-            taskStartTime = get_time();
-            TaskGraph taskGraph7 = new TaskGraph("s7")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, u, u1)
-                    .task("t7", Particlefilter::findU, u, u1)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, u);
-            ImmutableTaskGraph immutableTaskGraph7 = taskGraph7.snapshot();
-            TornadoExecutionPlan executor7 = new TornadoExecutionPlan(immutableTaskGraph7);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor7.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long u_time = get_time();
-            System.out.printf("TIME TO CALC U TOOK: %f\n", elapsed_time(cum_sum, u_time - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO CALC U TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-            taskStartTime = get_time();
-            TaskGraph taskGraph8 = new TaskGraph("s8")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, u, arrayX, arrayY, CDF, xj, yj)
-                    .task("t8", Particlefilter::findNewArray, u, arrayX, arrayY, CDF, xj, yj)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, xj, yj);
-            ImmutableTaskGraph immutableTaskGraph8 = taskGraph8.snapshot();
-            TornadoExecutionPlan executor8 = new TornadoExecutionPlan(immutableTaskGraph8);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor8.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long xyj_time = get_time();
-            System.out.printf("TIME TO CALC NEW ARRAY X AND Y TOOK: %f\n", elapsed_time(u_time, xyj_time - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO CALC NEW ARRAY X AND Y TOOK: %f seconds\n", elapsed_time(t1, t2));
 
-            taskStartTime = get_time();
-            TaskGraph taskGraph9 = new TaskGraph("s9")
-                    .transferToDevice(DataTransferMode.EVERY_EXECUTION, xj, yj, weights)
-                    .task("t9", Particlefilter::resetWeights, arrayX, arrayY, xj, yj, weights)
-                    .transferToHost(DataTransferMode.EVERY_EXECUTION, arrayX, arrayY, weights);
-            ImmutableTaskGraph immutableTaskGraph9 = taskGraph9.snapshot();
-            TornadoExecutionPlan executor9 = new TornadoExecutionPlan(immutableTaskGraph9);
-//                    .withDevice(device);
-            taskEndTime = get_time();
+            t1 = System.nanoTime();
             executor9.execute();
-            taskTotalTime = taskTotalTime + (taskEndTime - taskStartTime);
+            t2 = System.nanoTime();
+            executorTime += t2 - t1;
             long reset = get_time();
-            System.out.printf("TIME TO RESET WEIGHTS TOOK: %f\n", elapsed_time(xyj_time, reset - (taskEndTime - taskStartTime)));
+            System.out.printf("TIME TO RESET WEIGHTS TOOK: %f seconds\n", elapsed_time(t1, t2));
         }
     }
 
@@ -727,11 +727,12 @@ public class Particlefilter {
         //call video sequence
         videoSequence(I, IszX, IszY, Nfr, seed);
         long endVideoSequence = get_time();
-        System.out.printf("VIDEO SEQUENCE TOOK %f\n", elapsed_time(start, endVideoSequence));
+        System.out.printf("VIDEO SEQUENCE TOOK %f seconds\n", elapsed_time(start, endVideoSequence));
         //call particle filter
         particleFilter(I, IszX, IszY, Nfr, seed, Nparticles);
         long endParticleFilter = get_time();
-        System.out.printf("PARTICLE FILTER TOOK %f\n", elapsed_time(endVideoSequence, endParticleFilter - taskTotalTime));
-        System.out.printf("ENTIRE PROGRAM TOOK %f\n", elapsed_time(start, endParticleFilter - taskTotalTime));
+        System.out.printf("PARTICLE FILTER TOOK %f seconds\n", elapsed_time(endVideoSequence, endParticleFilter));
+        System.out.printf("ENTIRE PROGRAM TOOK %f seconds\n", elapsed_time(start, endParticleFilter));
+        System.out.printf("Total Executor Time %f seconds\n", (executorTime / 1_000_000_000.0));
     }
 }
