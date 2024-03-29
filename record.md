@@ -3,7 +3,7 @@
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 | bfs | same  | undetermined | support | support | undetermined | null
 | hotspot | same  | undetermined | unsupport | support | undetermined | bail out with opencl-backend
-| hotspot3D | same  | undetermined | support | support | undetermined | null
+| hotspot3D | same  | undetermined | unsupport | support | undetermined | null
 | kmeans | null  | undetermined | unsupport | unsupport | undetermined | [bug](https://github.com/beehive-lab/TornadoVM/issues/331)
 | lud | undetermined  | undetermined | support | unsupport | undetermined | null
 | nw | undetermined  | undetermined | support | support | undetermined | null
