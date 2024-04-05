@@ -79,23 +79,30 @@ public class Pathfinder {
         src = new VectorInt(cols);
         temp = new VectorInt(cols);
 
+        long executorTime = 0;
         long startTime = System.nanoTime();
         for (int t = 0; t < rows - 1; t++) {
             temp = src;
             src = dst;
             dst = temp;
-            TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+            TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
             TaskGraph taskGraph1 = new TaskGraph("s1")
                     .transferToDevice(DataTransferMode.EVERY_EXECUTION, t, src, dst, wall)
                     .task("t1", Pathfinder::parallel, t, src, dst, wall)
                     .transferToHost(DataTransferMode.EVERY_EXECUTION, dst);
             ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-            TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+            TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                    .withDevice(device);
+            long t1 = System.nanoTime();
             executor1.execute();
+            long t2 = System.nanoTime();
+            executorTime += t2 - t1;
         }
         long endTime = System.nanoTime();
 
-        System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
+        System.out.println("Compute time: " + ((endTime - startTime) / 1_000_000_000.0) + " seconds");
+        System.out.println("Executor(s) time: " + (executorTime / 1_000_000_000.0) + " seconds");
+
         for (int i = 0; i < cols; i++) {
             System.out.print(data.get(i) + " ");
         }
