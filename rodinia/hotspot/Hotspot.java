@@ -4,6 +4,7 @@ import uk.ac.manchester.tornado.api.ImmutableTaskGraph;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
+import uk.ac.manchester.tornado.api.common.TornadoDevice;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 
 import java.io.PrintWriter;
@@ -126,12 +127,14 @@ public class Hotspot {
         System.out.printf("Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
         int array_size = row * col;
 
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, result, temp, power, row, col, Cap_1, Rx_1, Ry_1, Rz_1, step)
                 .task("t1", Hotspot::single_iteration, result, temp, power, row, col, Cap_1, Rx_1, Ry_1, Rz_1, step)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, result, temp, power);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                .withDevice(device);
 
         for (i = 0; i < num_iterations; i++) {
             System.out.printf("iteration %d\n", i++);
