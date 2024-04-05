@@ -15,7 +15,7 @@ import uk.ac.manchester.tornado.api.types.collections.VectorInt;
 import java.util.Random;
 
 public class Srad {
-    static int size_I, size_R, iter, k, nthreads, r1 = 0, r2 = 0, c1 = 0, c2 = 0, rows = 0, cols = 0, niter = 10;
+    static int size_I, size_R, iter, k, r1 = 0, r2 = 0, c1 = 0, c2 = 0, rows = 0, cols = 0, niter = 10;
     static float sum, sum2, tmp, meanROI, varROI, Jc, G2, L, num, den, qsqr, cN, cS, cW, cE, D, lambda = 0, q0sqr = 0;
     static VectorInt iN, iS, jE, jW;
     static VectorFloat I, J, dN, dS, dW, dE, c;
@@ -148,23 +148,24 @@ public class Srad {
         random_matrix(I, rows, cols);
 
         for (k = 0; k < size_I; k++) {
-            J.set(k, (float) TornadoMath.exp(I.get(k)));
+            J.set(k, TornadoMath.exp(I.get(k)));
         }
 
         System.out.print("Start the SRAD main loop\n");
 
         VectorInt temp = new VectorInt(1);
 
-        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, intParas, doubleParas, J, dN, dS, dW, dE, iN, iS, jW, jE, c)
                 .task("t1", Srad::parallel1, intParas, doubleParas, J, dN, dS, dW, dE, iN, iS, jW, jE, c)
                 .task("t2", Srad::parallel2, intParas, doubleParas, c, iS, dN, dS, dW, dE, jE, J)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, J, dN, dS, dW, dE, c);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
-//                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                .withDevice(device);
 
+        long executorTime = 0;
         for (iter = 0; iter < niter; iter++) {
             sum = 0;
             sum2 = 0;
@@ -180,10 +181,12 @@ public class Srad {
             q0sqr = varROI / (meanROI * meanROI);
             doubleParas.set(0, lambda);
             doubleParas.set(1, q0sqr);
+            long t1 = System.nanoTime();
             executor1.execute();
-            // parallel1(intParas, doubleParas);
-            // parallel2(intParas, doubleParas);
+            long t2 = System.nanoTime();
+            executorTime += t2 - t1;
         }
+        System.out.println("Executor(s) Time: " + (executorTime / 1_000_000_000.0)  + " seconds");
         if (printFlag == true) {
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
