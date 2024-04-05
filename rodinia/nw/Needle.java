@@ -14,35 +14,36 @@ import java.io.PrintWriter;
 import java.util.Random;
 
 public class Needle {
+    static long executorTime = 0;
     final static int BLOCK_SIZE = 16;
     final static int LIMIT = -999;
     static VectorInt reference;
     static VectorInt input_itemsets;
     static int[][] blosum62 = {
-        { 4, -1, -2, -2,  0, -1, -1,  0, -2, -1, -1, -1, -1, -2, -1,  1,  0, -3, -2,  0, -2, -1,  0, -4},
-        {-1,  5,  0, -2, -3,  1,  0, -2,  0, -3, -2,  2, -1, -3, -2, -1, -1, -3, -2, -3, -1,  0, -1, -4},
-        {-2,  0,  6,  1, -3,  0,  0,  0,  1, -3, -3,  0, -2, -3, -2,  1,  0, -4, -2, -3,  3,  0, -1, -4},
-        {-2, -2,  1,  6, -3,  0,  2, -1, -1, -3, -4, -1, -3, -3, -1,  0, -1, -4, -3, -3,  4,  1, -1, -4},
-        { 0, -3, -3, -3,  9, -3, -4, -3, -3, -1, -1, -3, -1, -2, -3, -1, -1, -2, -2, -1, -3, -3, -2, -4},
-        {-1,  1,  0,  0, -3,  5,  2, -2,  0, -3, -2,  1,  0, -3, -1,  0, -1, -2, -1, -2,  0,  3, -1, -4},
-        {-1,  0,  0,  2, -4,  2,  5, -2,  0, -3, -3,  1, -2, -3, -1,  0, -1, -3, -2, -2,  1,  4, -1, -4},
-        { 0, -2,  0, -1, -3, -2, -2,  6, -2, -4, -4, -2, -3, -3, -2,  0, -2, -2, -3, -3, -1, -2, -1, -4},
-        {-2,  0,  1, -1, -3,  0,  0, -2,  8, -3, -3, -1, -2, -1, -2, -1, -2, -2,  2, -3,  0,  0, -1, -4},
-        {-1, -3, -3, -3, -1, -3, -3, -4, -3,  4,  2, -3,  1,  0, -3, -2, -1, -3, -1,  3, -3, -3, -1, -4},
-        {-1, -2, -3, -4, -1, -2, -3, -4, -3,  2,  4, -2,  2,  0, -3, -2, -1, -2, -1,  1, -4, -3, -1, -4},
-        {-1,  2,  0, -1, -3,  1,  1, -2, -1, -3, -2,  5, -1, -3, -1,  0, -1, -3, -2, -2,  0,  1, -1, -4},
-        {-1, -1, -2, -3, -1,  0, -2, -3, -2,  1,  2, -1,  5,  0, -2, -1, -1, -1, -1,  1, -3, -1, -1, -4},
-        {-2, -3, -3, -3, -2, -3, -3, -3, -1,  0,  0, -3,  0,  6, -4, -2, -2,  1,  3, -1, -3, -3, -1, -4},
-        {-1, -2, -2, -1, -3, -1, -1, -2, -2, -3, -3, -1, -2, -4,  7, -1, -1, -4, -3, -2, -2, -1, -2, -4},
-        { 1, -1,  1,  0, -1,  0,  0,  0, -1, -2, -2,  0, -1, -2, -1,  4,  1, -3, -2, -2,  0,  0,  0, -4},
-        { 0, -1,  0, -1, -1, -1, -1, -2, -2, -1, -1, -1, -1, -2, -1,  1,  5, -2, -2,  0, -1, -1,  0, -4},
-        {-3, -3, -4, -4, -2, -2, -3, -2, -2, -3, -2, -3, -1,  1, -4, -3, -2, 11,  2, -3, -4, -3, -2, -4},
-        {-2, -2, -2, -3, -2, -1, -2, -3,  2, -1, -1, -2, -1,  3, -3, -2, -2,  2,  7, -1, -3, -2, -1, -4},
-        { 0, -3, -3, -3, -1, -2, -2, -3, -3,  3,  1, -2,  1, -1, -2, -2,  0, -3, -1,  4, -3, -2, -1, -4},
-        {-2, -1,  3,  4, -3,  0,  1, -1,  0, -3, -4,  0, -3, -3, -2,  0, -1, -4, -3, -3,  4,  1, -1, -4},
-        {-1,  0,  0,  1, -3,  3,  4, -2,  0, -3, -3,  1, -1, -3, -1,  0, -1, -3, -2, -2,  1,  4, -1, -4},
-        { 0, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2,  0,  0, -2, -1, -1, -1, -1, -1, -4},
-        {-4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4,  1}
+            { 4, -1, -2, -2,  0, -1, -1,  0, -2, -1, -1, -1, -1, -2, -1,  1,  0, -3, -2,  0, -2, -1,  0, -4},
+            {-1,  5,  0, -2, -3,  1,  0, -2,  0, -3, -2,  2, -1, -3, -2, -1, -1, -3, -2, -3, -1,  0, -1, -4},
+            {-2,  0,  6,  1, -3,  0,  0,  0,  1, -3, -3,  0, -2, -3, -2,  1,  0, -4, -2, -3,  3,  0, -1, -4},
+            {-2, -2,  1,  6, -3,  0,  2, -1, -1, -3, -4, -1, -3, -3, -1,  0, -1, -4, -3, -3,  4,  1, -1, -4},
+            { 0, -3, -3, -3,  9, -3, -4, -3, -3, -1, -1, -3, -1, -2, -3, -1, -1, -2, -2, -1, -3, -3, -2, -4},
+            {-1,  1,  0,  0, -3,  5,  2, -2,  0, -3, -2,  1,  0, -3, -1,  0, -1, -2, -1, -2,  0,  3, -1, -4},
+            {-1,  0,  0,  2, -4,  2,  5, -2,  0, -3, -3,  1, -2, -3, -1,  0, -1, -3, -2, -2,  1,  4, -1, -4},
+            { 0, -2,  0, -1, -3, -2, -2,  6, -2, -4, -4, -2, -3, -3, -2,  0, -2, -2, -3, -3, -1, -2, -1, -4},
+            {-2,  0,  1, -1, -3,  0,  0, -2,  8, -3, -3, -1, -2, -1, -2, -1, -2, -2,  2, -3,  0,  0, -1, -4},
+            {-1, -3, -3, -3, -1, -3, -3, -4, -3,  4,  2, -3,  1,  0, -3, -2, -1, -3, -1,  3, -3, -3, -1, -4},
+            {-1, -2, -3, -4, -1, -2, -3, -4, -3,  2,  4, -2,  2,  0, -3, -2, -1, -2, -1,  1, -4, -3, -1, -4},
+            {-1,  2,  0, -1, -3,  1,  1, -2, -1, -3, -2,  5, -1, -3, -1,  0, -1, -3, -2, -2,  0,  1, -1, -4},
+            {-1, -1, -2, -3, -1,  0, -2, -3, -2,  1,  2, -1,  5,  0, -2, -1, -1, -1, -1,  1, -3, -1, -1, -4},
+            {-2, -3, -3, -3, -2, -3, -3, -3, -1,  0,  0, -3,  0,  6, -4, -2, -2,  1,  3, -1, -3, -3, -1, -4},
+            {-1, -2, -2, -1, -3, -1, -1, -2, -2, -3, -3, -1, -2, -4,  7, -1, -1, -4, -3, -2, -2, -1, -2, -4},
+            { 1, -1,  1,  0, -1,  0,  0,  0, -1, -2, -2,  0, -1, -2, -1,  4,  1, -3, -2, -2,  0,  0,  0, -4},
+            { 0, -1,  0, -1, -1, -1, -1, -2, -2, -1, -1, -1, -1, -2, -1,  1,  5, -2, -2,  0, -1, -1,  0, -4},
+            {-3, -3, -4, -4, -2, -2, -3, -2, -2, -3, -2, -3, -1,  1, -4, -3, -2, 11,  2, -3, -4, -3, -2, -4},
+            {-2, -2, -2, -3, -2, -1, -2, -3,  2, -1, -1, -2, -1,  3, -3, -2, -2,  2,  7, -1, -3, -2, -1, -4},
+            { 0, -3, -3, -3, -1, -2, -2, -3, -3,  3,  1, -2,  1, -1, -2, -2,  0, -3, -1,  4, -3, -2, -1, -4},
+            {-2, -1,  3,  4, -3,  0,  1, -1,  0, -3, -4,  0, -3, -3, -2,  0, -1, -4, -3, -3,  4,  1, -1, -4},
+            {-1,  0,  0,  1, -3,  3,  4, -2,  0, -3, -3,  1, -1, -3, -1,  0, -1, -3, -2, -2,  1,  4, -1, -4},
+            { 0, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2,  0,  0, -2, -1, -1, -1, -1, -1, -4},
+            {-4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4, -4,  1}
     };
 
     public static void printInput() {
@@ -115,13 +116,15 @@ public class Needle {
         for (@Parallel int b_index_x = 0; b_index_x < ((paras.get(1) - 1) / BLOCK_SIZE) - (blk.get(0) - 1); ++b_index_x) {
             int b_index_y = (paras.get(1) - 1) / BLOCK_SIZE + blk.get(0) - 2 - (b_index_x + blk.get(0) - 1);
             int[] input_itemsets_l = new int[(BLOCK_SIZE + 1) * (BLOCK_SIZE + 1)];
+            //VectorInt input_itemsets_l = new VectorInt((BLOCK_SIZE + 1) * (BLOCK_SIZE + 1));
+
             int[] reference_l = new int[BLOCK_SIZE * BLOCK_SIZE];
+            //VectorInt reference_l = new VectorInt(BLOCK_SIZE * BLOCK_SIZE);
 
             // Copy referrence to local memory
             for (int i = 0; i < BLOCK_SIZE; ++i) {
                 for (int j = 0; j < BLOCK_SIZE; ++j) {
-                    reference_l[i * BLOCK_SIZE + j] = reference.get(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j + 1);
-                }
+                    reference_l[i * BLOCK_SIZE + j] = reference.get(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j + 1);                }
             }
 
             // Copy input_itemsets to local memory
@@ -136,50 +139,52 @@ public class Needle {
                 for (int j = 1; j < BLOCK_SIZE + 1; ++j) {
                     input_itemsets_l[i * (BLOCK_SIZE + 1) + j] = maximum(input_itemsets_l[(i - 1) * (BLOCK_SIZE + 1) + j - 1] + reference_l[(i - 1) * BLOCK_SIZE + j - 1],
                             input_itemsets_l[i * (BLOCK_SIZE + 1) + j - 1] - paras.get(2),
-                            input_itemsets_l[(i - 1) * (BLOCK_SIZE + 1) + j] - paras.get(2));
-                }
+                            input_itemsets_l[(i - 1) * (BLOCK_SIZE + 1) + j] - paras.get(2));}
             }
 
             // Copy results to global memory
             for (int i = 0; i < BLOCK_SIZE; ++i) {
                 for (int j = 0; j < BLOCK_SIZE; ++j) {
-                    input_itemsets.set(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j + 1, input_itemsets_l[(i + 1) * (BLOCK_SIZE + 1) + j + 1]);
-                }
+                    input_itemsets.set(paras.get(1) * (b_index_y * BLOCK_SIZE + i + 1) + (b_index_x + blk.get(0) - 1) * BLOCK_SIZE + j + 1, input_itemsets_l[(i + 1) * (BLOCK_SIZE + 1) + j + 1]);                }
             }
         }
     }
 
     public static void nw_optimized1(VectorInt input_itemsets, VectorInt reference, VectorInt paras) {
         VectorInt blkk = new VectorInt(1);
-//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras, blkk)
                 .task("t1", Needle::parallel1, input_itemsets, reference, paras, blkk)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference);
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
-        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1);
-//                .withDevice(device);
+        TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
+                .withDevice(device);
         for (int blk = 1; blk <= (paras.get(1) - 1) / BLOCK_SIZE; blk++) {
             blkk.set(0, blk);
+            long t1 = System.nanoTime();
             executor1.execute();
-            //parallel1(input_itemsets, reference, paras, blkk);
+            long t2 = System.nanoTime();
+            executorTime += t2 - t1;
         }
     }
 
     public static void nw_optimized2(VectorInt input_itemsets, VectorInt reference, VectorInt paras) {
         VectorInt blkk = new VectorInt(1);
-//        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         TaskGraph taskGraph2 = new TaskGraph("s2")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference, paras, blkk)
                 .task("t2", Needle::parallel2, input_itemsets, reference, paras, blkk)
                 .transferToHost(DataTransferMode.EVERY_EXECUTION, input_itemsets, reference);
         ImmutableTaskGraph immutableTaskGraph2 = taskGraph2.snapshot();
-        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2);
-//                .withDevice(device);
+        TornadoExecutionPlan executor2 = new TornadoExecutionPlan(immutableTaskGraph2)
+                .withDevice(device);
         for (int blk = 2; blk <= (paras.get(1) - 1) / BLOCK_SIZE; blk++) {
             blkk.set(0, blk);
+            long t1 = System.nanoTime();
             executor2.execute();
-            //parallel2(input_itemsets, reference, paras, blkk);
+            long t2 = System.nanoTime();
+            executorTime += t2 - t1;
         }
     }
 
@@ -244,7 +249,8 @@ public class Needle {
         nw_optimized1(input_itemsets, reference, paras);
         nw_optimized2(input_itemsets, reference, paras);
         long endTime = System.nanoTime();
-        System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
+        System.out.println("Compute time: " + ((endTime - startTime) / 1_000_000_000.0) + " seconds");
+        System.out.println("Executor(s) time: " + (executorTime / 1_000_000_000.0) + " seconds");
 
         try {
             PrintWriter writer = new PrintWriter("tornado-examples/src/main/java/uk/ac/manchester/tornado/examples/rodinia/nw/result.txt");
@@ -297,7 +303,7 @@ public class Needle {
             }
             writer.close();
         } catch (Exception e) {
-            System.out.println("Error writing to result.txt");
+            System.out.println("Error writing to result.txt: " + e);
         }
     }
 
