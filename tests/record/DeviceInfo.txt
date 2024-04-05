@@ -1,0 +1,38 @@
+Number of Tornado drivers: 1
+Driver: OpenCL
+  Total number of OpenCL devices  : 4
+  Tornado device=0:0  (DEFAULT)
+	OPENCL --  [NVIDIA CUDA] -- NVIDIA GeForce MX250
+		Global Memory Size: 2.0 GB
+		Local Memory Size: 48.0 KB
+		Workgroup Dimensions: 3
+		Total Number of Block Threads: [1024]
+		Max WorkGroup Configuration: [1024, 1024, 64]
+		Device OpenCL C version: OpenCL C 1.2
+
+  Tornado device=0:1
+	OPENCL --  [Intel(R) OpenCL HD Graphics] -- Intel(R) UHD Graphics 620 [0x3ea0]
+		Global Memory Size: 6.0 GB
+		Local Memory Size: 64.0 KB
+		Workgroup Dimensions: 3
+		Total Number of Block Threads: [256]
+		Max WorkGroup Configuration: [256, 256, 256]
+		Device OpenCL C version: OpenCL C 1.2
+
+  Tornado device=0:2
+	OPENCL --  [Intel(R) OpenCL] -- Intel(R) Core(TM) i7-8565U CPU @ 1.80GHz
+		Global Memory Size: 7.5 GB
+		Local Memory Size: 32.0 KB
+		Workgroup Dimensions: 3
+		Total Number of Block Threads: [8192]
+		Max WorkGroup Configuration: [8192, 8192, 8192]
+		Device OpenCL C version: OpenCL C 3.0
+
+  Tornado device=0:3
+	OPENCL --  [Intel(R) FPGA Emulation Platform for OpenCL(TM)] -- Intel(R) FPGA Emulation Device
+		Global Memory Size: 7.5 GB
+		Local Memory Size: 256.0 KB
+		Workgroup Dimensions: 3
+		Total Number of Block Threads: [67108864]
+		Max WorkGroup Configuration: [67108864, 67108864, 67108864]
+		Device OpenCL C version: OpenCL C 1.2
