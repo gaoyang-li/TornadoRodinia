@@ -244,8 +244,7 @@ public class Lud {
         }
 
         long startTime = System.nanoTime();
-        System.out.println("running OMP on host");
-        TornadoDevice device = TornadoRuntime.getTornadoRuntime().getDefaultDevice();
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         TaskGraph taskGraph1 = new TaskGraph("s1")
                 .transferToDevice(DataTransferMode.EVERY_EXECUTION, m, matrix_dim)
                 .task("t1", Lud::lud, m, matrix_dim)
@@ -253,10 +252,12 @@ public class Lud {
         ImmutableTaskGraph immutableTaskGraph1 = taskGraph1.snapshot();
         TornadoExecutionPlan executor1 = new TornadoExecutionPlan(immutableTaskGraph1)
                 .withDevice(device);
+        long t1 = System.nanoTime();
         executor1.execute();
-        //lud(m, matrix_dim);
+        long t2 = System.nanoTime();
         long endTime = System.nanoTime();
-        System.out.println("Time consumed(s): " + (float)(endTime - startTime) / 1000000000);
+        System.out.println("Time consumed: " + ((endTime - startTime) / 1_000_000_000.0) + " seconds");
+        System.out.println("Executor Time: " + ((t2 - t1) / 1_000_000_000.0) + " seconds");
 
         if (do_verify == 1) {
             System.out.println("After LUD");
