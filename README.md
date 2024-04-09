@@ -18,5 +18,5 @@ Before you begin, ensure that you have met the following requirements:
 
 3. **Rodinia OpenMP**: Follow the installation guide [here](https://github.com/yuhc/gpu-rodinia/tree/master/openmp) to install Rodinia OpenMP.
  
-4. **Test Data**: Follow the installation guide [here]([http://lava.cs.virginia.edu/Rodinia/download_links.htm](http://www.cs.virginia.edu/~skadron/lava/Rodinia/Packages/rodinia_3.1.tar.bz2)) to install the test data for OpenMP & TornadoVM.
+4. **Test Data**: Follow the installation guide [here](http://www.cs.virginia.edu/~skadron/lava/Rodinia/Packages/rodinia_3.1.tar.bz2) to install the test data for OpenMP & TornadoVM.
 
