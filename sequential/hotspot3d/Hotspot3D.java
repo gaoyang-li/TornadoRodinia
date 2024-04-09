@@ -207,15 +207,15 @@ public class Hotspot3D {
         System.arraycopy(tempIn, 0, tempCopy, 0, size);
 
         //struct timeval start, stop;
-        float time;
+        long time;
         long startTime = System.nanoTime();
         computeTempOMP(powerIn, tempIn, tempOut, numCols, numRows, layers, Cap, Rx, Ry, Rz, dt, iterations);
         long endTime = System.nanoTime();
-        time = (endTime - startTime) / 1000000000;
+        time = endTime - startTime;
         computeTempCPU(powerIn, tempCopy, answer, numCols, numRows, layers, Cap, Rx, Ry, Rz, dt, iterations);
 
         float acc = accuracy(tempOut, answer, numRows * numCols * layers);
-        System.out.printf("Time: %.3f (s)\n", time);
+        System.out.printf("Time: %f (s)\n", (time/1_000_000_000.0));
         System.out.printf("Accuracy: %e\n", acc);
         writeoutput(tempOut, numRows, numCols, layers, ofile);
     }

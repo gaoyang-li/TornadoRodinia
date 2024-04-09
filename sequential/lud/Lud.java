@@ -240,7 +240,7 @@ public class Lud {
         long startTime = System.nanoTime();
         lud(m, matrix_dim);
         long endTime = System.nanoTime();
-        System.out.println("Time consumed(s): " + (float)(endTime - startTime) / 1000000000);
+        System.out.println("Time consumed(s): " + ((endTime - startTime) / 1_000_000_000.0));
 
         if (do_verify == 1) {
             System.out.println("After LUD");

@@ -16,8 +16,8 @@ public class Particlefilter {
     }
 
     // Returns the number of seconds elapsed between the two specified times
-    public static float elapsed_time(long start_time, long end_time) {
-        return (float) (end_time - start_time) / (1000000000);
+    public static double elapsed_time(long start_time, long end_time) {
+        return ((end_time - start_time) / 1_000_000_000.0);
     }
 
     // Takes in a double and returns an integer that approximates to that double

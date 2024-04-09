@@ -198,7 +198,7 @@ public class Hotspot {
         compute_tran_temp(result, sim_time, temp, power, grid_rows, grid_cols);
         double end_time = System.nanoTime();
         System.out.println("Ending simulation");
-        System.out.printf("Total time: %.3f seconds\n", ((end_time - start_time) / 1000000000));
+        System.out.printf("Total time: %f seconds\n", ((end_time - start_time) / 1_000_000_000.0));
         writeoutput((1&sim_time)==1 ? result : temp, grid_rows, grid_cols, ofile);
     }
 

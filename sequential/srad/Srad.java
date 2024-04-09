@@ -87,6 +87,7 @@ public class Srad {
 
         System.out.printf("Start the SRAD main loop\n");
 
+        long t1 = System.nanoTime();
         for (iter = 0; iter < niter; iter++) {
             sum = 0;
             sum2 = 0;
@@ -144,6 +145,9 @@ public class Srad {
                 }
             }
         }
+        long t2 = System.nanoTime();
+        System.out.println("Execution Time: " + ((t2-t1)/1_000_000_000.0)  + " seconds");
+
         if (printFlag == true){
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {

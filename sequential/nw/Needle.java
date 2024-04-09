@@ -184,7 +184,7 @@ public class Needle {
         long startTime = System.nanoTime();
         nw_optimized(input_itemsets, output_itemsets, reference, max_rows, max_cols, penalty);
         long endTime = System.nanoTime();
-        System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
+        System.out.println("Compute time: " + ((endTime - startTime) / 1_000_000_000.0));
 
         try {
             PrintWriter writer = new PrintWriter("result.txt");

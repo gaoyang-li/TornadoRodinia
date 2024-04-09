@@ -2,6 +2,7 @@ import java.util.Random;
 
 
 public class Pathfinder {
+    static double executorTime = 0;
     static int rows = 0;
     static int cols = 0;
     static int[] data;
@@ -28,6 +29,7 @@ public class Pathfinder {
                 wall[i][j] = rand.nextInt(10);
             }
         }
+        
         int count = 0;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -87,12 +89,15 @@ public class Pathfinder {
         long graphtime = 0;
         int t = 0;
 
+        double tempTime1 = System.nanoTime();
         hello(temp, src, dst, wall);
+        double tempTime2 = System.nanoTime();
+        executorTime += tempTime2 - tempTime1;
 
         dst = src;
         long endTime = System.nanoTime();
 
-        System.out.println("Compute time: " + (double)(endTime - startTime - graphtime) / 1000000000);
+        System.out.println("Compute time: " + ((endTime - startTime - graphtime) / 1_000_000_000.0));
         for (int i = 0; i < cols; i++) {
             System.out.print(data[i] + " ");
         }
@@ -105,5 +110,6 @@ public class Pathfinder {
 
     public static void main(String[] args) {
         run(args);
+        System.out.println("Time of Executor(s): " + (executorTime/1_000_000_000.0) + " seconds");
     }
 }

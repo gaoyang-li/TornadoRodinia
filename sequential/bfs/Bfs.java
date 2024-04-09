@@ -116,7 +116,7 @@ public class Bfs {
         } while (stop[0] == 1);
 
         long endTime = System.nanoTime();
-        System.out.println("Compute time: " + (double)(endTime - startTime) / 1000000000);
+        System.out.println("Compute time: " + ((endTime - startTime) / 1_000_000_000.0));
     }
 
     public static void writeResultsToFile(int[] h_cost) {
