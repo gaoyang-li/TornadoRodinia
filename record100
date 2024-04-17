@@ -1,0 +1,61 @@
+DEVICE: PTX -- QUADRO GP100
+	global memory size: 15.9GB
+	local memory size: 48.0kb
+	workgroup dimensions: 3
+	total number of block threads: [2147483647, 65535, 65535]
+	max workgroup configuration: [1024, 1024, 64]
+	deivice opencl c version: N/A
+
+hotspot 1024 1024 1024
+	Java:		2.308
+	Tornado:	3.167
+	Openmp:		0.722	
+
+
+
+hotspot3d 64 8 1024:
+	Java:		0.203
+	Tornado:	16.851
+	OpenMP:		0.044
+
+
+
+particlefilter x 2048 y 2048 x 10 np 10000
+	Java:		0.376		
+	Tornado: 	2.234
+	OpenMP:		0.141
+
+
+
+lud 2048.dat
+	Java		3.076
+	Tornado:	57.393
+	OpenMP:		116.546
+
+
+
+bfs 16M, 8M, 4M, 2M, 1M, 512, 256, 128, 65536, 4096
+	Java:		2.366, 1.279, 0.00857, 0.00133		
+	Tornado:	3.517, 1.708, 0.851, 0.507, 0.373, 0.318, 0.287, 0.274, 0.251, 0.241
+	OpenMP:		0.889, 0.340, 0.00156, 0.001072
+	
+
+
+pathfinder 10000 100
+	Java:		0.00755
+	Tornado:	1.025
+	OpenMP:		0.00132
+	
+
+
+Needle 2048 10
+	Java:		0.0535		
+	TornadoVM:	8.694	
+	OpenMP:		0.007
+
+
+
+srad 2048 2048 0 127 0 127 0.5 2
+	Java:	 	0.206
+	Tornado: 	22.235
+	OpenMP:	 	0.00176
