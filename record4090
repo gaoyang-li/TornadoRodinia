@@ -1,4 +1,10 @@
-RTX 4090
+DEVICE: PTX -- RTX 4090
+	global memory size: 23.6GB
+	local memory size: 48.0kb
+	workgroup dimensions: 3
+	total number of block threads: [2147483647, 65535, 65535]
+	max workgroup configuration: [1024, 1024, 64]
+	deivice opencl c version: N/A
 
 bfs 16M, 8M, 4M, 2M, 1M, 512K, 256K, 128K
 	Java:		1.8844, 0.8122, 0.3407, 0.1344, 0.0820, 0.0359, 0.0173, 0.0084
